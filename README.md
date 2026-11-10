@@ -56,8 +56,8 @@ You can install and use AtCoder Pulse in under 1 minute on any Chromium-based br
 
 ## ✨ Features & Screenshots
 
-### 1. 📅 Activity Heatmap & Streaks (Codeforces-Style)
-Track your daily practice habits over a 53-week GitHub/Codeforces-style calendar. Automatically scrolls to the current date so your latest updates are always front and center.
+### 1. 📅 Activity Heatmap & Streaks (Row 1)
+Track your practice consistency over a 53-week GitHub/Codeforces-style calendar. The scrollbar automatically defaults to the rightmost edge so your latest solve updates are instantly visible.
 
 ![Activity Heatmap & Streaks](screenshots/activity-heatmap.png)
 
@@ -66,21 +66,30 @@ Track your daily practice habits over a 53-week GitHub/Codeforces-style calendar
 
 ---
 
-### 2. 📊 Solved by Difficulty (200-Rating Intervals)
+### 2. 📊 Solved by Difficulty (200-Rating Intervals) (Row 2)
 Visualizes your problem distribution across 18 granular 200-rating intervals (`0-199`, `200-399` ... `3000-3199`, `3200+`, and `Unrated`) using AtCoder's official tier colors.
 
 ![Solved by Difficulty](screenshots/difficulty-distribution.png)
 
-- **Interactive Filtering**: Click any bar to instantly filter the Solved List to show only problems in that rating range!
+- **Interactive Filtering**: Click any bar to instantly filter the Solved List to inspect problems in that rating range!
+- **Accurate 0-Count Handling**: Clean tracks without misleading colored stubs for intervals with zero solves.
 
 ---
 
-### 3. 🔍 Search, Task (A–Ex) Filtering & Multi-Criteria Sorting
-Full control over your solved and unsolved problem lists with live search, dedicated task selectors, and flexible sorting.
+### 3. 📋 Problem Task Index & Submission Analytics (Row 3)
+A dual-panel breakdown providing actionable insights into your contest problem tendencies and coding language preferences.
 
-![Search, Task Filter & Sorting Toolbar](screenshots/search-filter-sorting.png)
+![Task Index Breakdown & Submission Analytics](screenshots/task-index-and-verdicts.png)
 
-- **Task Index Selector**: Filter directly by `Task A`, `Task B`, `Task C`, `Task D`, `Task E`, `Task F`, `Task G`, `Task Ex`, or `Other`.
+- **Task Index Breakdown (A, B, C, D, E, F, G, Ex)**: Shows your solve counts across every task letter. Click any task row to view solved problems for that task!
+- **Verdicts Progress Bar**: Color-coded segmented bar for AC, WA, TLE, RE, CE, and MLE verdicts.
+- **Language Statistics**: Accurate percentage breakdown of your most-used programming languages (C++, PyPy, Python, Rust, etc.).
+
+---
+
+### 4. 🔍 Search, Task (A–Ex) Filter & Multi-Criteria Sorting
+Full control over your solved and unsolved problem lists with live search, dedicated task selectors, and flexible sorting:
+- **Task Selector**: Filter directly by `Task A`, `Task B`, `Task C`, `Task D`, `Task E`, `Task F`, `Task G`, `Task Ex`, or `Other`.
 - **Multi-Criteria Sorting**:
   - `Recently Solved First` (or Recently Attempted)
   - `Task: A to Ex` (A ➔ B ➔ C ... ➔ Ex)
@@ -91,20 +100,9 @@ Full control over your solved and unsolved problem lists with live search, dedic
 
 ---
 
-### 4. 🔥 Compact Solved & Unsolved Backlog Lists
-Quickly review past attempts and see problems that still need an Accepted verdict.
-
-![Solved and Unsolved Problem Lists](screenshots/solved-unsolved-list.png)
-
-- **At-a-Glance Badges**: Difficulty rating pill, attempt count, failed verdicts, time ago, and contest tag.
-- **⚡ 1st-Try AC Detection**: Highlights whether a problem was solved on the first submission or required retries.
-- **One-Click Links**: Jump straight into the task statement or review past submissions.
-
----
-
 ### 5. ⚡ Instant Sync & Smart Caching
 - **Instant Local Cache**: Renders immediately on page load from IndexedDB without waiting for network requests.
-- **Direct AtCoder Scraping**: Bypasses Kenkoooo crawl delays by fetching your recent submissions directly from AtCoder for real-time AC updates.
+- **Direct AtCoder Scraping**: Bypasses Kenkoooo crawl delays by fetching your recent submissions directly from AtCoder for real-time AC updates on `Sync Now`.
 - **24-Hour Metadata TTL**: Problem models and contest indexes are cached locally to minimize network traffic.
 
 ---
@@ -123,8 +121,7 @@ Switch between dark and light modes with a single click using the theme toggle b
 ├── screenshots/                   # Feature screenshots for documentation
 │   ├── activity-heatmap.png
 │   ├── difficulty-distribution.png
-│   ├── search-filter-sorting.png
-│   └── solved-unsolved-list.png
+│   └── task-index-and-verdicts.png
 ├── icons/                         # 16, 32, 48, 128px extension icons
 ├── popup/                         # Toolbar quick-view popup (HTML/CSS/JS)
 ├── content/                       # Injected dashboard scripts & styles
