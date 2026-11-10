@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AtCoder Pulse - Analytics & Unsolved Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body class="ac-popup-body">
+  <div class="ac-popup-container">
+    <!-- Header -->
+    <header class="ac-popup-header">
+      <div class="ac-popup-brand">
+        <span class="ac-popup-dot"></span>
+        <span class="ac-popup-title">AtCoder Pulse</span>
+      </div>
+      <button id="ac-pin-btn" class="ac-popup-icon-btn" title="Pin this handle as default">📌</button>
+    </header>
+
+    <!-- Handle Search Box -->
+    <div class="ac-popup-search">
+      <input type="text" id="ac-handle-input" placeholder="Enter AtCoder Handle..." />
+      <button id="ac-fetch-btn" class="ac-popup-fetch-btn">Check</button>
+    </div>
+
+    <!-- Status message / loader -->
+    <div id="ac-popup-status" class="ac-popup-status" style="display: none;"></div>
+
+    <!-- Main Content Area -->
+    <div id="ac-popup-content" style="display: none;">
+      <!-- KPI Stats -->
+      <div class="ac-popup-stats-grid">
+        <div class="ac-popup-stat-card">
+          <div class="ac-stat-num" id="pop-solved">0</div>
+          <div class="ac-stat-lbl">Unique Solved</div>
+        </div>
+        <div class="ac-popup-stat-card">
+          <div class="ac-stat-num" id="pop-first-try">0%</div>
+          <div class="ac-stat-lbl">First-Try AC</div>
+        </div>
+        <div class="ac-popup-stat-card">
+          <div class="ac-stat-num" id="pop-streak">0🔥</div>
+          <div class="ac-stat-lbl">Day Streak</div>
+        </div>
+        <div class="ac-popup-stat-card">
+          <div class="ac-stat-num" id="pop-unsolved" style="color: #f87171;">0</div>
+          <div class="ac-stat-lbl">Unsolved</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="ac-popup-profile-link">
+        <a id="pop-profile-url" href="#" target="_blank" class="ac-popup-btn-full">
+          Open Full Analytics Dashboard ➔
+        </a>
+      </div>
+
+      <!-- Mini Unsolved Backlog -->
+      <div class="ac-popup-section-title">
+        <span>🔥 Top Unsolved Problems</span>
+        <span id="pop-unsolved-count" class="ac-popup-badge">0</span>
+      </div>
+      <div id="pop-unsolved-list" class="ac-popup-list"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../utils/colors.js"></script>
+  <script src="../utils/db.js"></script>
+  <script src="../utils/api.js"></script>
+  <script src="../utils/charts.js"></script>
+  <script src="../utils/analyzer.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
+
