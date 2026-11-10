@@ -1,150 +1,170 @@
-# ⚡ AtCoder Pulse (AtCoder Analytics & Unsolved Tracker)
+# ⚡ AtCoder Pulse
 
-A fast, lightweight, and modern **Manifest V3** Chrome extension tailored for competitive programmers. It adds comprehensive solve statistics, interactive AtCoder difficulty breakdown charts, and a **Codeforces-style Unsolved Problem Tracker** directly onto AtCoder profile pages.
-
----
-
-## 🌟 Key Features
-
-1. **📊 Codeforces-Style Practice Heatmap & Streaks (Row 1)**:
-   - Full 53-week practice activity heatmap aligned with local dates.
-   - Clean 12-month timeline (`Dec` to `Nov`) triggering on the 1st of each month.
-   - Default auto-scroll to the rightmost side so recent days and active streaks are instantly visible.
-   - 6-metric Codeforces practice stats grid: Solved for all time, last year, last month, and Max streaks (all time, last year, current).
-
-2. **🎨 200-Rating Interval Difficulty Bar Chart (Row 2)**:
-   - 18 granular rating buckets (`0-199`, `200-399` ... `3000-3199`, `3200+`, `Unrated`).
-   - Clean spacing with numbers and labels rendered in their official AtCoder tier colors.
-   - Click any bar to instantly filter problems in that rating bucket inside the Solved List.
-
-3. **🔥 Codeforces-style Compact Unsolved Problem Tracker**:
-   - 3-4 column compact 2-line problem tiles.
-   - Tracks all problems attempted with non-AC verdicts (WA, TLE, etc.) needing AC.
-   - Filters for difficulty tiers and contest series (ABC/ARC/AGC).
-   - Direct 1-click **Solve Now ➔** link to jump to the task statement.
-
-4. **✅ Solved List (Recently Solved First)**:
-   - Chronologically sorted by the exact date you solved each problem.
-   - Dual-mode difficulty filtering: 200-rating intervals or standard 400-point tiers.
-   - First-try AC tag (`⚡ 1st Try AC`) vs retry counts.
-
-5. **🎯 Smart Practice & Profile Accuracy**:
-   - Measures your speed and precision with a dedicated `🎯 One-Shot AC` accuracy pill in the header.
-   - Problem recommendations tailored to your current median solve rating.
-
-6. **⚡ Blazing Fast & Fully Cached**:
-   - Incremental Kenkoooo API sync cached in `chrome.storage.local`.
-   - Strictly confined to profile pages (`atcoder.jp/users/*`); no scripts injected into contest task pages.
-   - 100% Manifest V3 CSP compliant (zero remote scripts).
-
-6. **📌 Toolbar Extension Popup**:
-   - Check any handle on the fly.
-   - Pin your default handle.
-   - Quick overview of solves, streak, and top unsolved problems.
+> **A modern, lightweight Manifest V3 browser extension for competitive programmers.**  
+> Enhances your AtCoder profile pages with interactive analytics, Codeforces-style activity heatmaps, 200-rating interval distributions, and an instant unsolved backlog tracker.
 
 ---
 
-## 📂 Project Architecture
+## 🌟 About the Extension
 
-```
-├── manifest.json                  # Chrome Extension Manifest V3 configuration
-├── package.py                     # One-click packager for Chrome Web Store release
-├── icons/                         # 16, 32, 48, 128px high-res icons
-│   ├── icon16.png
-│   ├── icon32.png
-│   ├── icon48.png
-│   └── icon128.png
-├── popup/                         # Extension toolbar popup
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-├── content/                       # Content scripts injected into atcoder.jp/users/*
-│   ├── content.js                 # Profile page injection & tab switcher
-│   ├── content.css                # Dark / Light theme styling
-│   └── dashboard.js               # Reactive UI & problem cards rendering
-├── background/                    # Background service worker
-│   └── service_worker.js
-└── utils/                         # Reusable logic modules
-    ├── colors.js                  # AtCoder rating colors & tier definitions
-    ├── db.js                      # IndexedDB persistent storage
-    ├── api.js                     # Kenkoooo API client with incremental sync
-    ├── charts.js                  # Native SVG chart rendering
-    └── analyzer.js                # Core metrics, streaks & unsolved extractor
-```
+**AtCoder Pulse** is designed to give AtCoder competitors the same deep analytics and practice tracking experience familiar to platforms like Codeforces and LeetCode, injected seamlessly directly into `https://atcoder.jp/users/*` profile pages.
+
+### Why AtCoder Pulse?
+- 📅 **Practice Consistency**: Visualizes your daily solves over a 53-week rolling heatmap with streak tracking.
+- 🎯 **Targeted Training**: Identifies your rating strengths and weaknesses across 18 granular 200-point rating intervals.
+- 🔥 **No Problem Left Behind**: Compact unsolved backlog tracks every problem you attempted with WA/TLE and reminds you to upsolve it.
+- ⚡ **Zero Crawl Delay**: Unlike traditional Kenkoooo tools that lag 5–15 minutes, AtCoder Pulse scrapes AtCoder's own submission page directly on sync for **instant AC detection**!
+- 🪶 **Lightweight & Private**: 100% client-side, zero external telemetry, zero tracking, runs locally on your browser.
 
 ---
 
-## 🛠️ How to Test Locally in Chrome, Brave & Firefox
+## 🛠️ How to Install & Use Locally (ZIP File)
 
-### 1. Google Chrome & Brave Browser
-Since **Brave** is built on Chromium, the installation process is identical:
-1. In the browser URL bar, go to:
-   - For Chrome: `chrome://extensions/`
-   - For Brave: `brave://extensions/`
-2. Turn ON **Developer mode** (top-right toggle switch).
-3. Click **Load unpacked** (top-left button).
-4. Select this directory:
-   ```
-   /media/din/Programming2/Coding/My Procject/AtCoder Extension
-   ```
-5. The extension **AtCoder Pulse** is now loaded!
+You can install and use AtCoder Pulse in under 1 minute on any Chromium-based browser (**Chrome, Brave, Edge, Opera, Vivaldi**) or **Mozilla Firefox**.
+
+### 1. Chromium Browsers (Google Chrome, Brave, Microsoft Edge)
+
+1. **Get the files**:
+   - Download or locate the [`atcoder-pulse-extension.zip`](atcoder-pulse-extension.zip) file from this repository.
+   - Extract (unzip) the zip file into a folder on your computer.
+2. **Open Extensions page**:
+   - Chrome: `chrome://extensions`
+   - Brave: `brave://extensions`
+   - Edge: `edge://extensions`
+3. **Enable Developer Mode**:
+   - Toggle the **Developer mode** switch in the top-right corner.
+4. **Load the Extension**:
+   - Click the **Load unpacked** button in the top-left corner.
+   - Select the extracted folder containing `manifest.json`.
+5. **Start Using**:
+   - Open any AtCoder profile (e.g. `https://atcoder.jp/users/chokudai` or your profile).
+   - You will see the **AtCoder Pulse** analytics interface directly integrated into the page!
+
+---
 
 ### 2. Mozilla Firefox
-Firefox supports Manifest V3 with temporary add-on loading:
-1. In Firefox's URL bar, go to:
+
+1. Open Firefox and navigate to:
    ```
    about:debugging#/runtime/this-firefox
    ```
 2. Click **Load Temporary Add-on...**
-3. Navigate to the project folder and select the `manifest.json` file (or `atcoder-pulse-extension.zip`).
-4. The extension will be installed immediately and remain active during your browsing session.
+3. Select the `manifest.json` file inside the extracted folder (or the `.zip` file).
+4. The extension will be active immediately.
 
 ---
 
-### 🌐 Live Testing on AtCoder
-Once loaded in your browser:
-- Open any AtCoder profile (e.g. `https://atcoder.jp/users/chokudai`, `https://atcoder.jp/users/tourist`, or your handle).
-- You will see the new **`Pulse Analytics & Unsolved`** tab and a quick button.
-- Open any problem (e.g. `https://atcoder.jp/contests/abc300/tasks/abc300_a`) to see the auto-injected difficulty badge and your past attempt status!
-- Open a contest tasks list (e.g. `https://atcoder.jp/contests/abc300/tasks`) to see difficulty ratings for all tasks in that contest.
-- Click the extension icon in the browser toolbar to inspect the popup view.
+## ✨ Features & Screenshots
+
+### 1. 📅 Activity Heatmap & Streaks (Codeforces-Style)
+Track your daily practice habits over a 53-week GitHub/Codeforces-style calendar. Automatically scrolls to the current date so your latest updates are always front and center.
+
+![Activity Heatmap & Streaks](screenshots/activity-heatmap.png)
+
+- **6 Key Practice Metrics**: Solved all time, solved last year, solved last month, and max consecutive active days (all time, last year, and current streak).
+- **Accurate Local Time**: Dates use your browser's local timezone (no UTC drift).
 
 ---
 
-## 🚀 Publishing to Google Chrome Web Store
+### 2. 📊 Solved by Difficulty (200-Rating Intervals)
+Visualizes your problem distribution across 18 granular 200-rating intervals (`0-199`, `200-399` ... `3000-3199`, `3200+`, and `Unrated`) using AtCoder's official tier colors.
 
-### Step 1: Package the Extension
-Run the included packaging script:
+![Solved by Difficulty](screenshots/difficulty-distribution.png)
+
+- **Interactive Filtering**: Click any bar to instantly filter the Solved List to show only problems in that rating range!
+
+---
+
+### 3. 🔍 Search, Task (A–Ex) Filtering & Multi-Criteria Sorting
+Full control over your solved and unsolved problem lists with live search, dedicated task selectors, and flexible sorting.
+
+![Search, Task Filter & Sorting Toolbar](screenshots/search-filter-sorting.png)
+
+- **Task Index Selector**: Filter directly by `Task A`, `Task B`, `Task C`, `Task D`, `Task E`, `Task F`, `Task G`, `Task Ex`, or `Other`.
+- **Multi-Criteria Sorting**:
+  - `Recently Solved First` (or Recently Attempted)
+  - `Task: A to Ex` (A ➔ B ➔ C ... ➔ Ex)
+  - `Task: Ex to A`
+  - `Difficulty: High to Low`
+  - `Difficulty: Low to High`
+  - `Oldest Solved First`
+
+---
+
+### 4. 🔥 Compact Solved & Unsolved Backlog Lists
+Quickly review past attempts and see problems that still need an Accepted verdict.
+
+![Solved and Unsolved Problem Lists](screenshots/solved-unsolved-list.png)
+
+- **At-a-Glance Badges**: Difficulty rating pill, attempt count, failed verdicts, time ago, and contest tag.
+- **⚡ 1st-Try AC Detection**: Highlights whether a problem was solved on the first submission or required retries.
+- **One-Click Links**: Jump straight into the task statement or review past submissions.
+
+---
+
+### 5. ⚡ Instant Sync & Smart Caching
+- **Instant Local Cache**: Renders immediately on page load from IndexedDB without waiting for network requests.
+- **Direct AtCoder Scraping**: Bypasses Kenkoooo crawl delays by fetching your recent submissions directly from AtCoder for real-time AC updates.
+- **24-Hour Metadata TTL**: Problem models and contest indexes are cached locally to minimize network traffic.
+
+---
+
+### 6. 🌙 Dark & Light Themes
+Switch between dark and light modes with a single click using the theme toggle button in the header.
+
+---
+
+## 📂 Project Structure
+
+```
+├── manifest.json                  # Manifest V3 browser configuration
+├── package.py                     # Script to package atcoder-pulse-extension.zip
+├── atcoder-pulse-extension.zip    # Ready-to-use distribution archive
+├── screenshots/                   # Feature screenshots for documentation
+│   ├── activity-heatmap.png
+│   ├── difficulty-distribution.png
+│   ├── search-filter-sorting.png
+│   └── solved-unsolved-list.png
+├── icons/                         # 16, 32, 48, 128px extension icons
+├── popup/                         # Toolbar quick-view popup (HTML/CSS/JS)
+├── content/                       # Injected dashboard scripts & styles
+│   ├── content.js                 # DOM injection & tab management
+│   ├── dashboard.js               # Reactive dashboard components
+│   └── content.css                # Themes & responsive styling
+├── background/                    # Service worker for background network bridge
+│   └── service_worker.js
+└── utils/                         # Core analytics & storage modules
+    ├── api.js                     # Direct AtCoder scraper & Kenkoooo fallback
+    ├── analyzer.js                # Solves, streaks, and rating algorithms
+    ├── charts.js                  # Native SVG chart renderers
+    ├── colors.js                  # 200-rating intervals & AtCoder colors
+    └── db.js                      # IndexedDB local storage layer
+```
+
+---
+
+## 📦 How to Rebuild the Extension ZIP
+
+If you make any changes to the code, simply run:
+
 ```bash
 python3 package.py
 ```
-This generates `atcoder-pulse-extension.zip` containing all necessary files.
 
-### Step 2: Create a Chrome Web Store Developer Account
-1. Visit the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-2. Sign in with your Google account.
-3. Pay the one-time \$5 registration fee (required by Google to prevent spam).
+This will automatically validate file integrity and create a fresh `atcoder-pulse-extension.zip`.
 
-### Step 3: Upload the Extension
-1. In the Developer Dashboard, click **Add new item** (`+ New Item`).
-2. Upload the `atcoder-pulse-extension.zip` file.
-3. Fill in the **Store Listing**:
-   - **Name**: `AtCoder Pulse - Analytics & Unsolved Tracker`
-   - **Summary**: `Deep profile analytics, difficulty breakdown charts, and Codeforces-style unsolved problem tracker for AtCoder.`
-   - **Detailed Description**: Copy the highlights from this README.
-   - **Category**: `Developer Tools` or `Productivity`.
-   - **Language**: English (or your preferred default).
-   - **Icon**: Upload `icons/icon128.png` (128x128).
-   - **Screenshots**: Take 1-2 screenshots of the dashboard (1280x800 or 640x400) showing the charts and unsolved problems.
+---
 
-### Step 4: Privacy & Permissions Justification
-Under the **Privacy** tab:
-- **Single Purpose**: Explain that the extension provides performance analytics and tracks unsolved competitive programming problems on AtCoder.
-- **Permission Justification**:
-  - `storage` / `unlimitedStorage`: Used to cache problem difficulties and past submissions locally in IndexedDB so pages load instantly.
-  - `host_permissions` (`https://atcoder.jp/*`, `https://kenkoooo.com/*`): Used to display the analytics dashboard on AtCoder profiles and retrieve public submission data from the Kenkoooo AtCoder API.
-- Check "I do not sell user data" and confirm no user personal data is collected or transmitted to external third-party servers.
+## 🔒 Privacy & Permissions
 
-### Step 5: Submit for Review
-Click **Submit for Review**. Google typically reviews and approves Manifest V3 extensions within 24 to 72 hours.
+- **Permissions Used**:
+  - `storage` / `unlimitedStorage`: Caches your submissions and difficulty ratings locally in IndexedDB.
+  - `host_permissions` (`https://atcoder.jp/*`, `https://kenkoooo.com/*`): Injects the dashboard into AtCoder profile pages and downloads problem difficulty models.
+- **No Remote Code**: 100% compliant with Manifest V3 CSP. All scripts are bundled locally.
+- **Zero Tracking**: Your data never leaves your browser.
 
+---
+
+## 📄 License
+
+MIT License. Created by [Md-DinIslam](https://github.com/Md-DinIslam).
