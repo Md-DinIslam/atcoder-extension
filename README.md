@@ -25,7 +25,7 @@ You can install and use AtCoder Pulse in under 1 minute on any Chromium-based br
 ### 1. Chromium Browsers (Google Chrome, Brave, Microsoft Edge)
 
 1. **Get the files**:
-   - Download or locate the [`atcoder-pulse-extension.zip`](atcoder-pulse-extension.zip) file from this repository.
+   - Download or locate the [`atcoder-pulse-chrome.zip`](atcoder-pulse-chrome.zip) file from this repository.
    - Extract (unzip) the zip file into a folder on your computer.
 2. **Open Extensions page**:
    - Chrome: `chrome://extensions`
@@ -191,7 +191,7 @@ Access your essential practice metrics and top unsolved problems directly from y
 ├── manifest.json                  # Manifest V3 configuration for Chrome / Chromium
 ├── manifest.firefox.json          # Manifest V3 configuration for Firefox & AMO
 ├── package.py                     # Packaging script for Chrome & Firefox
-├── atcoder-pulse-extension.zip    # Distribution archive for Chrome / Brave / Edge
+├── atcoder-pulse-chrome.zip       # Distribution archive for Chrome / Brave / Edge
 ├── atcoder-pulse-firefox.zip      # Distribution archive for Firefox & AMO Developer Hub
 ├── screenshots/                   # Feature screenshots for documentation
 │   ├── activity-heatmap.png
@@ -228,7 +228,7 @@ If you make any changes to the code, simply run:
 python3 package.py
 ```
 
-This will automatically validate file integrity and create a fresh `atcoder-pulse-extension.zip`.
+This will automatically package both `atcoder-pulse-chrome.zip` and `atcoder-pulse-firefox.zip`.
 
 ---
 

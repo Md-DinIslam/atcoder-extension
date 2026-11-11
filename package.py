@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-Packaging script for Chrome Web Store and Firefox Add-ons (AMO).
-Builds separate, browser-compliant packages:
-1. atcoder-pulse-extension.zip (and atcoder-pulse-chrome.zip) for Chromium (Chrome, Brave, Edge)
-2. atcoder-pulse-firefox.zip for Firefox & Mozilla Developer Hub (AMO)
+Packaging script for Chrome and Firefox releases.
+Builds two separate, browser-compliant distribution packages:
+1. atcoder-pulse-chrome.zip  (For Chrome, Brave, Edge, Opera, Vivaldi)
+2. atcoder-pulse-firefox.zip (For Mozilla Firefox & AMO Developer Hub)
 """
 
 import os
 import zipfile
 import json
-import shutil
 
 def package_browser(target_name, manifest_source):
     if os.path.exists(target_name):
@@ -19,7 +18,7 @@ def package_browser(target_name, manifest_source):
     total_files = 0
 
     with zipfile.ZipFile(target_name, "w", zipfile.ZIP_DEFLATED) as zf:
-        # Write specific manifest as manifest.json inside zip
+        # Write browser-specific manifest as manifest.json inside the zip
         zf.write(manifest_source, "manifest.json")
         total_files += 1
 
@@ -41,19 +40,17 @@ def main():
     with open("manifest.json", "r") as f:
         v = json.load(f).get("version", "1.0.0")
 
-    print(f"📦 Packaging AtCoder Pulse v{v} for Chrome & Firefox...\n")
+    print(f"📦 Packaging AtCoder Pulse v{v} (2 packages: Chrome & Firefox)...\n")
 
-    # 1. Chrome build (atcoder-pulse-extension.zip)
-    print("🔹 Building Chromium package (Chrome, Brave, Edge):")
-    package_browser("atcoder-pulse-extension.zip", "manifest.json")
-    shutil.copyfile("atcoder-pulse-extension.zip", "atcoder-pulse-chrome.zip")
-    print("  ✅ Copied as atcoder-pulse-chrome.zip")
+    # 1. Chrome / Chromium build
+    print("🔹 Building Chromium package (Chrome, Brave, Edge, Opera):")
+    package_browser("atcoder-pulse-chrome.zip", "manifest.json")
 
-    # 2. Firefox build (atcoder-pulse-firefox.zip)
-    print("\n🦊 Building Firefox package (AMO / Developer Hub compliant):")
+    # 2. Firefox build
+    print("\n🦊 Building Firefox package (Mozilla Firefox & AMO):")
     package_browser("atcoder-pulse-firefox.zip", "manifest.firefox.json")
 
-    print("\n🚀 All packages built successfully!")
+    print("\n🚀 Done! Exactly 2 production zip packages created.")
 
 if __name__ == "__main__":
     main()
