@@ -98,12 +98,13 @@ Stay on top of problems you've attempted but haven't solved yet.
 
 ---
 
-### 5. ✅ Solved List with Task (A–Ex) Filtering & Multi-Criteria Sorting
+### 5. ✅ Solved List with Task (A–Ex) Filtering, Multi-Criteria Sorting & Pagination
 Explore your full history of solved problems with live search, rating tiers, and task filters.
 
 ![Solved Problems List](screenshots/solved-list.png)
 
 - **Live Search & Filter**: Search by problem title, ID, contest, or filter by exact rating intervals and task letters (`Task A`, `Task B` ... `Task Ex`).
+- **Clean 30-Problem Pagination**: Displays 30 problems per page with `« Prev` and `Next »` controls and direct page jumping, ensuring blazing-fast DOM performance.
 - **Comprehensive Sorting**:
   - `Recently Solved First` (Default)
   - `Task: A to Ex` (A ➔ B ➔ C ... ➔ Ex)
@@ -125,7 +126,20 @@ Targeted problem suggestions chosen near your current practice difficulty level 
 
 ---
 
-### 7. ⚡ Real-Time Instant Sync & Smart Caching
+### 7. 📌 Browser Toolbar Quick-Action Popup
+Access your essential practice metrics and top unsolved problems directly from your browser toolbar at any time without leaving your current tab.
+
+<p align="center">
+  <img src="screenshots/extension-popup.png" alt="AtCoder Pulse Toolbar Popup" width="380" />
+</p>
+
+- **At-A-Glance Stats**: Unique Solved count, First-Try AC percentage, active Day Streak, and current Unsolved backlog.
+- **Top Unsolved Shortcuts**: Instantly jump into problems you recently failed with direct **Solve ➔** links and difficulty badges.
+- **One-Click Dashboard Access**: Click **Open Full Analytics Dashboard ➔** to immediately navigate to your profile analytics.
+
+---
+
+### 8. ⚡ Real-Time Instant Sync & Smart Caching
 - **Instant Local Cache**: Renders immediately on page load from IndexedDB without waiting for network requests.
 - **Silent Real-Time Tracker (`submission_tracker.js`)**: Captures submissions the exact moment they are judged on AtCoder, updating open dashboard tabs in real time without waiting for external API crawlers.
 - **24-Hour Metadata TTL**: Problem models and contest indexes are cached locally to minimize network traffic.
@@ -144,7 +158,8 @@ Targeted problem suggestions chosen near your current practice difficulty level 
 │   ├── task-index-and-verdicts.png
 │   ├── unsolved-backlog.png
 │   ├── solved-list.png
-│   └── smart-practice.png
+│   ├── smart-practice.png
+│   └── extension-popup.png
 ├── icons/                         # 16, 32, 48, 128px extension icons
 ├── popup/                         # Toolbar quick-view popup (HTML/CSS/JS)
 ├── content/                       # Injected dashboard scripts & styles
