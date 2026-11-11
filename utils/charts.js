@@ -248,58 +248,107 @@ const AtCoderCharts = {
    * Renders Codeforces-style Heatmap Calendar & 6-Metric Streak Grid
    * @param {HTMLElement} container
    * @param {Object} cf - { allTimeSolved, yearSolved, monthSolved, allTimeMaxStreak, yearMaxStreak, currentStreak, dailyACCounts }
+   * @param {string|number} selectedYear - 'recent' (last 12 months) or a specific calendar year (e.g. 2026, 2025)
    */
-  renderCodeforcesActivityWidget(container, cf) {
+  renderCodeforcesActivityWidget(container, cf, selectedYear = 'recent') {
     if (!container || !cf) return;
     container.innerHTML = '';
 
     const dailyCounts = cf.dailyACCounts || {};
 
-    // Generate 53 weeks aligned to Sunday (GitHub / CF standard)
     const now = new Date();
     const todayYear = now.getFullYear();
     const todayMonth = now.getMonth();
     const todayDate = now.getDate();
     const todayDay = now.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
 
-    const todayLocal = new Date(todayYear, todayMonth, todayDate);
+    const todayLocal = new Date(todayYear, todayMonth, todayDate, 23, 59, 59, 999);
 
-    // Start on Sunday 52 weeks ago
-    const startDate = new Date(todayYear, todayMonth, todayDate - (52 * 7 + todayDay));
+    const isRolling = (selectedYear === 'recent' || !selectedYear);
+    const Y = isRolling ? null : parseInt(selectedYear, 10);
 
     const weeks = [];
-    const curDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
     const monthLabels = [];
     let lastMonth = -1;
 
-    for (let w = 0; w < 53; w++) {
-      const currentWeek = [];
-      for (let d = 0; d < 7; d++) {
-        const dStr = this.formatLocalDate(curDate);
-        const count = dailyCounts[dStr] || 0;
-        const isFuture = curDate > todayLocal;
+    if (isRolling) {
+      // Start on Sunday 52 weeks ago at noon local time (safe against DST shifts)
+      const startDate = new Date(todayYear, todayMonth, todayDate - (52 * 7 + todayDay), 12, 0, 0);
+      const curDate = new Date(startDate.getTime());
 
-        // Trigger month label on the 1st of each month (clean 12 months, matching Codeforces)
-        if (curDate.getDate() === 1) {
-          if (curDate.getMonth() !== lastMonth) {
-            monthLabels.push({
-              weekIdx: w,
-              name: curDate.toLocaleDateString('en-US', { month: 'short' })
-            });
-            lastMonth = curDate.getMonth();
+      for (let w = 0; w < 53; w++) {
+        const currentWeek = [];
+        for (let d = 0; d < 7; d++) {
+          const dStr = this.formatLocalDate(curDate);
+          const count = dailyCounts[dStr] || 0;
+          const isFuture = curDate > todayLocal;
+
+          // Trigger month label on the 1st of each month (clean 12 months, matching Codeforces)
+          if (curDate.getDate() === 1) {
+            if (curDate.getMonth() !== lastMonth) {
+              monthLabels.push({
+                weekIdx: w,
+                name: curDate.toLocaleDateString('en-US', { month: 'short' })
+              });
+              lastMonth = curDate.getMonth();
+            }
           }
+
+          currentWeek.push({
+            dateStr: dStr,
+            count,
+            isFuture
+          });
+
+          // Step 1 calendar day
+          curDate.setDate(curDate.getDate() + 1);
         }
-
-        currentWeek.push({
-          dateStr: dStr,
-          count,
-          isFuture
-        });
-
-        // Step 1 calendar day in local time
-        curDate.setDate(curDate.getDate() + 1);
+        weeks.push(currentWeek);
       }
-      weeks.push(currentWeek);
+    } else {
+      // Specific calendar year Y (e.g. 2026, 2025)
+      const jan1 = new Date(Y, 0, 1, 12, 0, 0);
+      const jan1Day = jan1.getDay(); // 0 is Sunday
+      const startDate = new Date(Y, 0, 1 - jan1Day, 12, 0, 0);
+
+      const dec31 = new Date(Y, 11, 31, 12, 0, 0);
+      const dec31Day = dec31.getDay();
+      const endDate = new Date(Y, 11, 31 + (6 - dec31Day), 12, 0, 0);
+
+      const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+      const numWeeks = Math.ceil(totalDays / 7);
+
+      const curDate = new Date(startDate.getTime());
+
+      for (let w = 0; w < numWeeks; w++) {
+        const currentWeek = [];
+        for (let d = 0; d < 7; d++) {
+          const dYear = curDate.getFullYear();
+          const dStr = this.formatLocalDate(curDate);
+          const count = dailyCounts[dStr] || 0;
+          const isBelongToYear = (dYear === Y);
+          const isFuture = !isBelongToYear || (Y === todayYear && curDate > todayLocal) || (Y > todayYear);
+
+          if (isBelongToYear && curDate.getDate() === 1) {
+            if (curDate.getMonth() !== lastMonth) {
+              monthLabels.push({
+                weekIdx: w,
+                name: curDate.toLocaleDateString('en-US', { month: 'short' })
+              });
+              lastMonth = curDate.getMonth();
+            }
+          }
+
+          currentWeek.push({
+            dateStr: dStr,
+            count: isBelongToYear ? count : 0,
+            isFuture
+          });
+
+          curDate.setDate(curDate.getDate() + 1);
+        }
+        weeks.push(currentWeek);
+      }
     }
 
     const getColor = (count, isFuture) => {
@@ -345,7 +394,7 @@ const AtCoderCharts = {
                     return `
                       <div class="ac-cf-cell ${isEmpty ? 'ac-cf-empty' : ''}" 
                            style="${bgStyle} ${day.isFuture ? 'visibility:hidden;' : ''}"
-                           title="${day.count} problem${day.count === 1 ? '' : 's'} solved on ${day.dateStr}">
+                           title="${day.isFuture ? '' : `${day.count} problem${day.count === 1 ? '' : 's'} solved on ${day.dateStr}`}">
                       </div>
                     `;
                   }).join('')}
@@ -357,7 +406,55 @@ const AtCoderCharts = {
       </div>
     `;
 
-    // 2. CF 6-Stats Grid (Matches Codeforces layout)
+    // 2. CF 6-Stats Grid (Matches Codeforces layout, adapting to selected year)
+    let statYearSolved = cf.yearSolved;
+    let statYearSolvedLbl = 'solved for the last year';
+    let statMonthOrActive = `${cf.monthSolved} problems`;
+    let statMonthOrActiveLbl = 'solved for the last month';
+    let statYearStreak = cf.yearMaxStreak;
+    let statYearStreakLbl = 'in a row for the last year';
+
+    if (!isRolling && Y) {
+      let yearSolvedCount = 0;
+      let activeDaysCount = 0;
+      const sortedYearDates = Object.keys(dailyCounts)
+        .filter(d => d.startsWith(`${Y}-`) && dailyCounts[d] > 0)
+        .sort();
+
+      for (const dStr of sortedYearDates) {
+        yearSolvedCount += (dailyCounts[dStr] || 0);
+        activeDaysCount++;
+      }
+
+      let yearMaxStreak = 0;
+      let tempStreak = 0;
+      let prevDateMs = null;
+
+      for (const dStr of sortedYearDates) {
+        const parts = dStr.split('-').map(Number);
+        const dMs = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0).getTime();
+        if (!prevDateMs) {
+          tempStreak = 1;
+        } else {
+          const diff = Math.round((dMs - prevDateMs) / 86400000);
+          if (diff === 1) {
+            tempStreak++;
+          } else if (diff > 1) {
+            tempStreak = 1;
+          }
+        }
+        if (tempStreak > yearMaxStreak) yearMaxStreak = tempStreak;
+        prevDateMs = dMs;
+      }
+
+      statYearSolved = yearSolvedCount;
+      statYearSolvedLbl = `solved in ${Y}`;
+      statMonthOrActive = `${activeDaysCount} days`;
+      statMonthOrActiveLbl = `active days in ${Y}`;
+      statYearStreak = yearMaxStreak;
+      statYearStreakLbl = `max streak in ${Y}`;
+    }
+
     const statsGridHtml = `
       <div class="ac-cf-stats-grid">
         <div class="ac-cf-stat-cell">
@@ -365,20 +462,20 @@ const AtCoderCharts = {
           <div class="ac-cf-stat-lbl">solved for all time</div>
         </div>
         <div class="ac-cf-stat-cell">
-          <div class="ac-cf-stat-num">${cf.yearSolved} problems</div>
-          <div class="ac-cf-stat-lbl">solved for the last year</div>
+          <div class="ac-cf-stat-num">${statYearSolved} problems</div>
+          <div class="ac-cf-stat-lbl">${statYearSolvedLbl}</div>
         </div>
         <div class="ac-cf-stat-cell">
-          <div class="ac-cf-stat-num">${cf.monthSolved} problems</div>
-          <div class="ac-cf-stat-lbl">solved for the last month</div>
+          <div class="ac-cf-stat-num">${statMonthOrActive}</div>
+          <div class="ac-cf-stat-lbl">${statMonthOrActiveLbl}</div>
         </div>
         <div class="ac-cf-stat-cell">
           <div class="ac-cf-stat-num">${cf.allTimeMaxStreak} days</div>
           <div class="ac-cf-stat-lbl">in a row max.</div>
         </div>
         <div class="ac-cf-stat-cell">
-          <div class="ac-cf-stat-num">${cf.yearMaxStreak} days</div>
-          <div class="ac-cf-stat-lbl">in a row for the last year</div>
+          <div class="ac-cf-stat-num">${statYearStreak} days</div>
+          <div class="ac-cf-stat-lbl">${statYearStreakLbl}</div>
         </div>
         <div class="ac-cf-stat-cell">
           <div class="ac-cf-stat-num">${cf.currentStreak} days</div>
@@ -390,16 +487,19 @@ const AtCoderCharts = {
     wrap.innerHTML = heatmapHtml + statsGridHtml;
     container.appendChild(wrap);
 
-    // Auto-scroll heatmap to the rightmost side by default so recent activity is instantly visible
+    // Auto-scroll heatmap:
+    // If recent/rolling or current year: scroll to the rightmost side so recent days are visible.
+    // If viewing a past year (e.g. 2025): scroll to the leftmost side so Jan 1 is visible.
     const scrollEl = wrap.querySelector('.ac-cf-heatmap-scroll');
     if (scrollEl) {
-      const scrollToRight = () => {
-        scrollEl.scrollLeft = scrollEl.scrollWidth;
+      const isPast = (!isRolling && Y && Y < todayYear);
+      const scrollToPosition = () => {
+        scrollEl.scrollLeft = isPast ? 0 : scrollEl.scrollWidth;
       };
-      scrollToRight();
-      requestAnimationFrame(scrollToRight);
-      setTimeout(scrollToRight, 50);
-      setTimeout(scrollToRight, 200);
+      scrollToPosition();
+      requestAnimationFrame(scrollToPosition);
+      setTimeout(scrollToPosition, 50);
+      setTimeout(scrollToPosition, 200);
     }
   }
 };

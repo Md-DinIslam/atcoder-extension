@@ -18,6 +18,7 @@ class AtCoderDashboard {
     this.unsolvedPage = 1;
     this.recommendationsPage = 1;
     this.solvedPage = 1;
+    this.selectedHeatmapYear = 'recent';
   }
 
   renderShell() {
@@ -77,11 +78,19 @@ class AtCoderDashboard {
           <div id="ac-tab-charts" class="ac-panel active">
             <!-- Row 1 (Single Row, Full Width): Codeforces-Style Daily Streak & Activity Heatmap -->
             <div class="ac-card ac-full-row-card">
-              <div class="ac-card-header">
-                <div class="ac-card-title">
-                  <span class="glyphicon glyphicon-calendar"></span> Activity Heatmap & Streaks
+              <div class="ac-card-header ac-card-header-flex">
+                <div>
+                  <div class="ac-card-title">
+                    <span class="glyphicon glyphicon-calendar"></span> Activity Heatmap & Streaks
+                  </div>
+                  <div class="ac-card-subtitle">Yearly practice consistency, solves by time period, and consecutive active days</div>
                 </div>
-                <div class="ac-card-subtitle">Yearly practice consistency, solves by time period, and consecutive active days</div>
+                <div class="ac-heatmap-controls">
+                  <label for="ac-cf-year-select" class="ac-cf-year-label">Year:</label>
+                  <select id="ac-cf-year-select" class="ac-select ac-select-sm" title="Select Heatmap Year">
+                    <option value="recent">Last 12 Months</option>
+                  </select>
+                </div>
               </div>
               <div id="ac-cf-activity-container"></div>
             </div>
@@ -332,6 +341,22 @@ class AtCoderDashboard {
       }
     });
 
+    // Heatmap Year Selector
+    const cfYearSelect = this.container.querySelector('#ac-cf-year-select');
+    if (cfYearSelect) {
+      cfYearSelect.addEventListener('change', (e) => {
+        this.selectedHeatmapYear = e.target.value;
+        const cfContainer = this.container.querySelector('#ac-cf-activity-container');
+        if (cfContainer && this.data && this.data.cfActivity) {
+          AtCoderCharts.renderCodeforcesActivityWidget(
+            cfContainer,
+            this.data.cfActivity,
+            this.selectedHeatmapYear
+          );
+        }
+      });
+    }
+
     // Filters for unsolved
     const unsolvedSearch = this.container.querySelector('#ac-unsolved-search');
     unsolvedSearch.addEventListener('input', (e) => {
@@ -528,9 +553,14 @@ class AtCoderDashboard {
 
     // 1. Row 1: Codeforces Activity Heatmap & Streaks (Month-wise like GitHub)
     try {
+      this.renderHeatmapYearSelect();
       const cfContainer = this.container.querySelector('#ac-cf-activity-container');
       if (cfContainer && this.data.cfActivity) {
-        AtCoderCharts.renderCodeforcesActivityWidget(cfContainer, this.data.cfActivity);
+        AtCoderCharts.renderCodeforcesActivityWidget(
+          cfContainer,
+          this.data.cfActivity,
+          this.selectedHeatmapYear
+        );
       }
     } catch (err) {
       console.warn('Heatmap render error:', err);
@@ -598,15 +628,58 @@ class AtCoderDashboard {
       console.warn('Language bars error:', err);
     }
 
-    // Scroll heatmap to right so recent activity is immediately visible
+    // Scroll heatmap appropriately so relevant activity is immediately visible
     this.scrollHeatmapToRight();
+  }
+
+  getAvailableHeatmapYears() {
+    const currentYear = new Date().getFullYear();
+    const yearsSet = new Set([currentYear]);
+
+    if (this.data && this.data.cfActivity && this.data.cfActivity.dailyACCounts) {
+      for (const dStr of Object.keys(this.data.cfActivity.dailyACCounts)) {
+        const y = parseInt(dStr.split('-')[0], 10);
+        if (!isNaN(y) && y >= 2010 && y <= currentYear + 1) {
+          yearsSet.add(y);
+        }
+      }
+    }
+
+    if (this.data && Array.isArray(this.data.solvedProblems)) {
+      for (const p of this.data.solvedProblems) {
+        const epoch = p.firstSolvedEpoch || p.solvedEpoch;
+        if (epoch) {
+          const y = new Date(epoch * 1000).getFullYear();
+          if (!isNaN(y) && y >= 2010 && y <= currentYear + 1) {
+            yearsSet.add(y);
+          }
+        }
+      }
+    }
+
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }
+
+  renderHeatmapYearSelect() {
+    const selectEl = this.container.querySelector('#ac-cf-year-select');
+    if (!selectEl) return;
+
+    const years = this.getAvailableHeatmapYears();
+    let optionsHtml = `<option value="recent"${this.selectedHeatmapYear === 'recent' ? ' selected' : ''}>Last 12 Months</option>`;
+    for (const y of years) {
+      optionsHtml += `<option value="${y}"${String(this.selectedHeatmapYear) === String(y) ? ' selected' : ''}>${y}</option>`;
+    }
+    selectEl.innerHTML = optionsHtml;
+    selectEl.value = this.selectedHeatmapYear;
   }
 
   scrollHeatmapToRight() {
     const scrollEl = this.container.querySelector('.ac-cf-heatmap-scroll');
     if (!scrollEl) return;
+    const currentYear = new Date().getFullYear();
+    const isPastYear = (this.selectedHeatmapYear !== 'recent' && parseInt(this.selectedHeatmapYear, 10) < currentYear);
     const doScroll = () => {
-      scrollEl.scrollLeft = scrollEl.scrollWidth;
+      scrollEl.scrollLeft = isPastYear ? 0 : scrollEl.scrollWidth;
     };
     doScroll();
     requestAnimationFrame(doScroll);
