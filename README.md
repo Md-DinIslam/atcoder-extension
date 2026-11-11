@@ -44,13 +44,32 @@ You can install and use AtCoder Pulse in under 1 minute on any Chromium-based br
 
 ### 2. Mozilla Firefox
 
-1. Open Firefox and navigate to:
-   ```
-   about:debugging#/runtime/this-firefox
-   ```
-2. Click **Load Temporary Add-on...**
-3. Select the `manifest.json` file inside the extracted folder (or the `.zip` file).
-4. The extension will be active immediately.
+You can easily run AtCoder Pulse on Firefox using either of the two methods below:
+
+#### Option A: Quick Load (Works on all Firefox versions)
+1. **Download & Extract**:
+   - Download [`atcoder-pulse-extension.zip`](atcoder-pulse-extension.zip) and extract it to a folder.
+2. **Open Firefox Debugging**:
+   - In Firefox address bar, paste and go to:
+     ```
+     about:debugging#/runtime/this-firefox
+     ```
+3. **Load the Add-on**:
+   - Click the **Load Temporary Add-on...** button.
+   - Select the `manifest.json` file inside your extracted folder (or directly select the `atcoder-pulse-extension.zip` file).
+4. **Pin to Toolbar**:
+   - Click the Extensions (puzzle 🧩) icon on the top-right toolbar.
+   - Click the gear icon (⚙️) next to **AtCoder Pulse** and select **Pin to Toolbar**.
+5. **Start Using**:
+   - Visit any AtCoder profile (e.g. `https://atcoder.jp/users/chokudai`) to see the dashboard immediately!
+
+#### Option B: Persistent Installation (Firefox Developer Edition / Nightly / LibreWolf)
+If you want the extension to remain permanently across browser restarts:
+1. Open `about:config` in Firefox and accept the risk warning.
+2. Search for `xpinstall.signatures.required` and toggle it to `false`.
+3. Open `about:addons` (or press `Ctrl+Shift+A`).
+4. Click the gear icon (⚙️) at the top and choose **"Install Add-on From File..."**.
+5. Select [`atcoder-pulse-extension.zip`](atcoder-pulse-extension.zip). The extension will stay installed permanently!
 
 ---
 
