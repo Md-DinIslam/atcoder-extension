@@ -46,57 +46,52 @@ AtCoder Pulse works smoothly on all desktop operating systems (**Windows, Linux,
 
 ### 2. Mozilla Firefox (Windows, Linux, macOS)
 
-Firefox enforces digital signing for permanently installed add-ons. Follow the method below that best fits your needs:
+Because standard release versions of Firefox strictly enforce digital signing for permanently installed add-ons, you can easily self-sign your own `.xpi` installer in under 2 minutes for free through Mozilla, or test it temporarily via `about:debugging`:
 
-#### 🌟 Method 1: Permanent Installation via Signed `.xpi` (Easiest & Recommended)
-If you have the officially signed `.xpi` installer (from GitHub Releases or generated via Method 2):
-1. **Open File in Firefox**:
-   - Drag and drop the `.xpi` file (e.g., `atcoder_pulse-1.0.1.xpi`) directly into any open Firefox tab.  
-   *(Or press `Ctrl + O` in Firefox and select the `.xpi` file).*
-2. **Confirm Installation**:
-   - A prompt will appear at the top-left: **"Add AtCoder Pulse?"**
-   - Click **Add**.
-3. **Done!** The extension is now **permanently installed**. It will remain active across browser restarts with zero warnings.
+#### Option A: Permanent Installation via Free Mozilla Self-Signing (Recommended)
+Mozilla provides a **100% free, instant automated self-distribution signing service** (no manual review, no public store listing required). Follow these simple steps to generate your permanent `.xpi` installer:
 
----
-
-#### 🛠️ Method 2: Generate Your Own Signed `.xpi` (Free & 2 Minutes)
-Mozilla allows any developer to generate officially signed `.xpi` packages for self-distribution at zero cost:
-1. **Sign in to AMO**:
-   - Visit [addons.mozilla.org (AMO)](https://addons.mozilla.org/) and log in with your Mozilla/Firefox account.
-2. **Open Submission Page**:
-   - Navigate to [AMO Developer Hub - Submit an Add-on](https://addons.mozilla.org/developers/addon/submit/distribution).
+1. **Download the Firefox ZIP**:
+   - Download [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip) from this repository.
+2. **Sign in to Mozilla Add-ons (AMO)**:
+   - Go to [addons.mozilla.org (AMO)](https://addons.mozilla.org/) and log in (or create a free account).
+3. **Open the Submission Page**:
+   - Navigate to the [AMO Developer Hub - Submit an Add-on](https://addons.mozilla.org/developers/addon/submit/distribution).
    - Under Distribution Channel, select **"On your own"** (Self-distribution / unlisted).
-3. **Upload the Firefox ZIP**:
-   - Upload [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip) from this repository.
-4. **Wait for Automated Approval**:
-   - Mozilla's automated validator checks the package. Within 1–3 minutes, the status updates from *Awaiting Review* to **Approved**.
-5. **Download Your `.xpi`**:
-   - Click on the approved version link (e.g., `Version 1.0.1`).
-   - Download the signed `.xpi` installer file and install it as described in **Method 1**.
+4. **Upload the ZIP**:
+   - Upload the [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip) file.
+5. **Wait for Automated Approval**:
+   - Mozilla's automated validator will verify the package. Wait 1–2 minutes, then refresh the page until the status changes from *Awaiting Review* to **Approved**.
+6. **Download Your Signed `.xpi`**:
+   - In the versions table, click on the blue **`Version 1.0.1`** link.
+   - Download the generated `.xpi` file (e.g. `atcoder_pulse-1.0.1.xpi`).
+7. **Install in Firefox**:
+   - Drag and drop the downloaded `.xpi` file directly into any open Firefox tab (or press `Ctrl + O` and select the file).
+   - Click **Add** on the installation prompt.
+   - **Done!** The extension is now **permanently installed** and will never disappear when you close or restart Firefox.
 
 > [!TIP]
-> **Future Updates**: When you want to sign a newer version of the extension in the future, do not delete the add-on. Instead, open your [Developer Dashboard](https://addons.mozilla.org/developers/addons), click your add-on, and use **"Upload a New Version"**.
+> **Updating in the future**: Never delete the add-on from your developer dashboard. To update, simply go to [Your Developer Dashboard](https://addons.mozilla.org/developers/addons), click **AtCoder Pulse**, and click the blue **"Upload a New Version"** button.
 
 ---
 
-#### 🧪 Method 3: Quick Temporary Testing (`about:debugging`)
-For quick testing or code inspection without signing:
-1. Download [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip).
-2. In Firefox address bar, navigate to:
+#### Option B: Quick Temporary Testing (`about:debugging`)
+If you just want to quickly test or inspect the extension without creating a Mozilla account:
+1. Download [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip) from this repo.
+2. In the Firefox address bar, navigate to:
    ```text
    about:debugging#/runtime/this-firefox
    ```
-3. Click **Load Temporary Add-on...** and select `atcoder-pulse-firefox.zip` (or the extracted `manifest.firefox.json` renamed to `manifest.json`).
+3. Click the **Load Temporary Add-on...** button and select the `atcoder-pulse-firefox.zip` file.
 4. The extension will be active immediately.  
-   *(Note: Temporary add-ons are automatically unloaded when Firefox closes).*
+   *(Note: Because this is a temporary development session, Firefox unloads it when the browser closes).*
 
 ---
 
-#### ⚡ Method 4: Firefox Developer Edition / LibreWolf / Waterfox
-If you use Developer Edition or LibreWolf where signature checks can be bypassed:
+#### Option C: Firefox Developer Edition / LibreWolf / Waterfox
+If you use Developer Edition or LibreWolf where signature checks can be disabled:
 1. Open `about:config` and set `xpinstall.signatures.required` to `false`.
-2. Open `about:addons` ➔ click the gear icon (⚙️) ➔ **"Install Add-on From File..."**.
+2. Open `about:addons` ➔ click the gear icon (⚙️) ➔ select **"Install Add-on From File..."**.
 3. Select [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip) to install permanently.
 
 ---
