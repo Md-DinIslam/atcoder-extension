@@ -87,28 +87,48 @@ A dual-panel breakdown providing actionable insights into your contest problem t
 
 ---
 
-### 4. 🔍 Search, Task (A–Ex) Filter & Multi-Criteria Sorting
-Full control over your solved and unsolved problem lists with live search, dedicated task selectors, and flexible sorting:
-- **Task Selector**: Filter directly by `Task A`, `Task B`, `Task C`, `Task D`, `Task E`, `Task F`, `Task G`, `Task Ex`, or `Other`.
-- **Multi-Criteria Sorting**:
-  - `Recently Solved First` (or Recently Attempted)
+### 4. 🔥 Header & Unsolved Backlog Tracker
+Stay on top of problems you've attempted but haven't solved yet.
+
+![Header Overview & Unsolved Backlog Tracker](screenshots/unsolved-backlog.png)
+
+- **Real-Time Header Sync**: Shows instant status updates (`✅ +1 new`), First-Try AC accuracy pill (`67.6%`), one-click **Sync Now**, and Dark/Light theme toggle.
+- **Unsolved Problem Cards**: Shows attempt count, exact failed verdicts (`❌ 2 (2WA)`), contest tag, and direct **Solve ➔** button to jump into the task.
+- **Filters**: Filter by Difficulty, Task (A–Ex), Contest type (ABC/ARC/AGC/Other), or sort by Most Attempts or Recently Attempted.
+
+---
+
+### 5. ✅ Solved List with Task (A–Ex) Filtering & Multi-Criteria Sorting
+Explore your full history of solved problems with live search, rating tiers, and task filters.
+
+![Solved Problems List](screenshots/solved-list.png)
+
+- **Live Search & Filter**: Search by problem title, ID, contest, or filter by exact rating intervals and task letters (`Task A`, `Task B` ... `Task Ex`).
+- **Comprehensive Sorting**:
+  - `Recently Solved First` (Default)
   - `Task: A to Ex` (A ➔ B ➔ C ... ➔ Ex)
   - `Task: Ex to A`
   - `Difficulty: High to Low`
   - `Difficulty: Low to High`
   - `Oldest Solved First`
+- **First-Try AC Badges**: Highlights problems solved on the very first try (`⚡ 1st Try AC`) versus problems that required retries (`✔ AC (3 tries)`).
 
 ---
 
-### 5. ⚡ Instant Sync & Smart Caching
+### 6. 🎯 Smart Practice Recommendations
+Targeted problem suggestions chosen near your current practice difficulty level to help push your rating higher.
+
+![Smart Practice Recommendations](screenshots/smart-practice.png)
+
+- **Adaptive Rating Match**: Dynamically recommends problems tailored to your median solving strength.
+- **Direct Solve Links**: 1-click links to jump directly to the problem statement.
+
+---
+
+### 7. ⚡ Real-Time Instant Sync & Smart Caching
 - **Instant Local Cache**: Renders immediately on page load from IndexedDB without waiting for network requests.
-- **Direct AtCoder Scraping**: Bypasses Kenkoooo crawl delays by fetching your recent submissions directly from AtCoder for real-time AC updates on `Sync Now`.
+- **Silent Real-Time Tracker (`submission_tracker.js`)**: Captures submissions the exact moment they are judged on AtCoder, updating open dashboard tabs in real time without waiting for external API crawlers.
 - **24-Hour Metadata TTL**: Problem models and contest indexes are cached locally to minimize network traffic.
-
----
-
-### 6. 🌙 Dark & Light Themes
-Switch between dark and light modes with a single click using the theme toggle button in the header.
 
 ---
 
@@ -121,17 +141,21 @@ Switch between dark and light modes with a single click using the theme toggle b
 ├── screenshots/                   # Feature screenshots for documentation
 │   ├── activity-heatmap.png
 │   ├── difficulty-distribution.png
-│   └── task-index-and-verdicts.png
+│   ├── task-index-and-verdicts.png
+│   ├── unsolved-backlog.png
+│   ├── solved-list.png
+│   └── smart-practice.png
 ├── icons/                         # 16, 32, 48, 128px extension icons
 ├── popup/                         # Toolbar quick-view popup (HTML/CSS/JS)
 ├── content/                       # Injected dashboard scripts & styles
 │   ├── content.js                 # DOM injection & tab management
 │   ├── dashboard.js               # Reactive dashboard components
+│   ├── submission_tracker.js      # Silent real-time submission listener
 │   └── content.css                # Themes & responsive styling
 ├── background/                    # Service worker for background network bridge
 │   └── service_worker.js
 └── utils/                         # Core analytics & storage modules
-    ├── api.js                     # Direct AtCoder scraper & Kenkoooo fallback
+    ├── api.js                     # Kenkoooo incremental sync & caching
     ├── analyzer.js                # Solves, streaks, and rating algorithms
     ├── charts.js                  # Native SVG chart renderers
     ├── colors.js                  # 200-rating intervals & AtCoder colors
