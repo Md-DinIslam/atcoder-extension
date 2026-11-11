@@ -149,7 +149,7 @@ const AtCoderAPI = {
 
     // ── STEP 1: Direct AtCoder Fetch (instant, bypasses Kenkoooo lag) ────
     try {
-      const recentContests = await this._getRecentContestIds(allSubmissions);
+      const recentContests = await this._getRecentContestIds(allSubmissions, userId);
       if (recentContests.length > 0) {
         const directSubs = await this._fetchDirectFromAtCoder(userId, recentContests);
         for (const s of directSubs) {
@@ -239,14 +239,16 @@ const AtCoderAPI = {
   },
 
   /**
-   * Collects recent contest IDs from:
-   * 1. chrome.storage.local (set by submission_tracker.js on any contest page visit)
-   * 2. Last few unique contest_ids from cached submissions
+   * Collects recent candidate contest IDs from:
+   * 1. chrome.storage.local (tracked by submission_tracker on visits / submits)
+   * 2. localStorage (instant, synchronous across tabs)
+   * 3. Last unique contest_ids from cached submissions
+   * 4. Recent ABC contests and common practice contests
    */
-  async _getRecentContestIds(cachedSubmissions) {
+  async _getRecentContestIds(cachedSubmissions, userId) {
     const ids = new Set();
 
-    // Source 1: contests tracked via chrome.storage.local (cross-tab, set by submission_tracker)
+    // Source 1: chrome.storage.local
     try {
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         const data = await new Promise(resolve => {
@@ -254,75 +256,101 @@ const AtCoderAPI = {
         });
         if (Array.isArray(data.pulse_recent_contests)) {
           for (const c of data.pulse_recent_contests) {
-            if (c) ids.add(c);
+            if (c) ids.add(c.trim());
           }
         }
       }
     } catch (e) {}
 
-    // Source 2: last unique contests from cached submission history
+    // Source 2: localStorage (instant across tabs on atcoder.jp)
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const local = localStorage.getItem('pulse_recent_contests');
+        if (local) {
+          const arr = JSON.parse(local);
+          if (Array.isArray(arr)) {
+            for (const c of arr) if (c) ids.add(c.trim());
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Source 3: Last unique contests from cached submission history
     if (Array.isArray(cachedSubmissions)) {
-      for (let i = cachedSubmissions.length - 1; i >= 0 && ids.size < 6; i--) {
-        if (cachedSubmissions[i].contest_id) ids.add(cachedSubmissions[i].contest_id);
+      for (let i = cachedSubmissions.length - 1; i >= 0 && ids.size < 12; i--) {
+        if (cachedSubmissions[i].contest_id) {
+          ids.add(cachedSubmissions[i].contest_id.trim());
+        }
       }
     }
 
-    return Array.from(ids).slice(0, 6);
+    // Source 4: Contests around user's latest known contests + standard practice
+    const candidates = [
+      'abc385', 'abc384', 'abc386', 'abc387', 'abc388', 'abc389', 'abc390',
+      'abc383', 'abc382', 'abc381', 'abc380',
+      'abc275', 'abc158', 'abc143', 'practice', 'practice2', 'typical90', 'dp'
+    ];
+    for (const c of candidates) {
+      if (ids.size >= 16) break;
+      ids.add(c);
+    }
+
+    return Array.from(ids).slice(0, 16);
   },
 
   /**
-   * Fetches submissions directly from AtCoder via the background service worker.
-   * Uses /submissions/me pages (with the user's session cookies).
-   * This bypasses Kenkoooo's 15–30 min crawling delay completely.
+   * Fetches submissions directly from AtCoder via content script same-origin fetch.
+   * Runs directly on https://atcoder.jp with full session credentials.
+   * Bypasses Kenkoooo's 15–30 min crawling delay completely.
    */
   async _fetchDirectFromAtCoder(userId, contestIds) {
     if (!contestIds || contestIds.length === 0) return [];
-
-    // Ask the background service worker to do the fetches (avoids CSP issues)
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-      try {
-        const result = await new Promise(resolve => {
-          chrome.runtime.sendMessage({
-            action: 'FETCH_ATCODER_SUBMISSIONS',
-            userId: userId,
-            contestIds: contestIds
-          }, (res) => {
-            if (chrome.runtime.lastError || !res) resolve(null);
-            else resolve(res);
-          });
-        });
-
-        if (result && result.rawPages && result.rawPages.length > 0) {
-          // Parse HTML pages returned from service worker using DOMParser (available in content script)
-          const subs = [];
-          for (const page of result.rawPages) {
-            const parsed = this._parseSubmissionsHtml(page.html, page.contestId, userId);
-            subs.push(...parsed);
-          }
-          return subs;
-        }
-      } catch (e) {
-        console.warn('[Pulse] Background fetch failed, trying direct:', e);
-      }
-    }
-
-    // Fallback: direct fetch from content script (may hit CSP on some pages)
-    return await this._fetchDirectFallback(userId, contestIds);
-  },
-
-  async _fetchDirectFallback(userId, contestIds) {
     const subs = [];
-    for (const contestId of contestIds.slice(0, 4)) {
+    const seenIds = new Set();
+
+    // Direct concurrent fetches from content script (same-origin with full cookies)
+    await Promise.all(contestIds.map(async (contestId) => {
       try {
-        const url = `https://atcoder.jp/contests/${encodeURIComponent(contestId)}/submissions/me`;
-        const resp = await fetch(url, { credentials: 'include' });
-        if (!resp.ok) continue;
-        const html = await resp.text();
-        if (html.includes('Sign In - AtCoder') || html.includes('/login?continue')) continue;
-        const parsed = this._parseSubmissionsHtml(html, contestId, userId);
-        subs.push(...parsed);
-      } catch (e) {}
-    }
+        // Attempt 1: /submissions/me (shows all submissions of logged-in user in this contest)
+        let url = `https://atcoder.jp/contests/${encodeURIComponent(contestId)}/submissions/me`;
+        let resp = await fetch(url, { credentials: 'include' });
+
+        if (resp.ok && !resp.redirected && !resp.url.includes('/login')) {
+          const html = await resp.text();
+          if (!html.includes('Sign In - AtCoder') && !html.includes('/login?continue')) {
+            const parsed = this._parseSubmissionsHtml(html, contestId, userId);
+            for (const s of parsed) {
+              if (!seenIds.has(s.id)) {
+                seenIds.add(s.id);
+                subs.push(s);
+              }
+            }
+            if (parsed.length > 0) return; // Found submissions, no need for fallback URL
+          }
+        }
+
+        // Attempt 2: Public submissions list filtered by user
+        if (userId) {
+          url = `https://atcoder.jp/contests/${encodeURIComponent(contestId)}/submissions?f.User=${encodeURIComponent(userId)}`;
+          resp = await fetch(url, { credentials: 'include' });
+          if (resp.ok && !resp.redirected && !resp.url.includes('/login')) {
+            const html = await resp.text();
+            if (!html.includes('Sign In - AtCoder') && !html.includes('/login?continue')) {
+              const parsed = this._parseSubmissionsHtml(html, contestId, userId);
+              for (const s of parsed) {
+                if (!seenIds.has(s.id)) {
+                  seenIds.add(s.id);
+                  subs.push(s);
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        // Silent skip for contests with no access / network error
+      }
+    }));
+
     return subs;
   },
 
@@ -368,16 +396,26 @@ const AtCoderAPI = {
           }
         }
 
+        // Accurate score extraction (skip date cell 0)
         let point = 0;
-        for (const c of cells) {
-          const v = parseFloat(c.textContent.trim());
-          if (!isNaN(v) && v >= 0 && v <= 3000) { point = v; break; }
+        const scoreCell = row.querySelector('.submission-score') || cells[4] || cells[3];
+        if (scoreCell) {
+          const v = parseFloat(scoreCell.textContent.trim());
+          if (!isNaN(v) && v >= 0 && v <= 3000) point = v;
         }
 
         results.push({
           id: parseInt(idMatch[1], 10),
           epoch_second: epoch,
           problem_id: taskMatch[1],
+          contest_id: contestId,
+          user_id: userId,
+          result, language, point
+        });
+      }
+    } catch (e) {}
+    return results;
+  }
           contest_id: contestId,
           user_id: userId,
           result, language, point

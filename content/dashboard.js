@@ -417,11 +417,19 @@ class AtCoderDashboard {
       this.renderSolvedList();
     });
 
+    // Save active username for tracker access across tabs
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('pulse_active_user', this.userId);
+      }
+    } catch (e) {}
+
     // Listen for live submission updates captured while solving problems
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
       chrome.runtime.onMessage.addListener((msg) => {
         if (msg && msg.action === 'NEW_SUBMISSION_RECORDED') {
           this._renderFromCache();
+          this.refreshData(false);
         }
       });
     }
@@ -430,9 +438,17 @@ class AtCoderDashboard {
       chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName === 'local' && changes.pulse_live_event) {
           this._renderFromCache();
+          this.refreshData(false);
         }
       });
     }
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'pulse_live_event') {
+        this._renderFromCache();
+        this.refreshData(false);
+      }
+    });
   }
 
   async loadInitialData() {

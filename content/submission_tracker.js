@@ -1,26 +1,57 @@
 /**
  * AtCoder Pulse - Silent Real-Time Submission Tracker
  * Runs on all atcoder.jp/contests/* pages.
- * Two jobs:
- *   1. Record which contests the user visits (so the dashboard knows where to look).
- *   2. Parse any visible submission rows and save judged results instantly.
+ * Roles:
+ *   1. Intercepts form submissions and tracks visited contests.
+ *   2. Parses visible submission rows, polls waiting verdicts, and saves judged results instantly.
+ *   3. Broadcasts updates across tabs (IndexedDB + chrome.storage + localStorage + runtime message).
  */
 
 (function () {
   'use strict';
 
-  // ── 1. Track visited contest ──────────────────────────────────────────
+  // ── 1. Contest Tracking ────────────────────────────────────────────────
   const contestMatch = window.location.pathname.match(/\/contests\/([^/?#]+)/);
   const currentContest = contestMatch ? contestMatch[1] : '';
 
-  if (currentContest && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get({ pulse_recent_contests: [] }, (data) => {
-      const list = Array.isArray(data.pulse_recent_contests) ? data.pulse_recent_contests : [];
-      // Move current contest to the front, keep max 6
-      const updated = [currentContest, ...list.filter(c => c !== currentContest)].slice(0, 6);
-      chrome.storage.local.set({ pulse_recent_contests: updated });
-    });
+  function recordContest(cid) {
+    if (!cid) return;
+    const clean = cid.trim();
+
+    // chrome.storage.local (extension-wide)
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get({ pulse_recent_contests: [] }, (data) => {
+        const list = Array.isArray(data.pulse_recent_contests) ? data.pulse_recent_contests : [];
+        const updated = [clean, ...list.filter(c => c !== clean)].slice(0, 15);
+        chrome.storage.local.set({ pulse_recent_contests: updated });
+      });
+    }
+
+    // localStorage (instant same-origin across all tabs)
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const local = localStorage.getItem('pulse_recent_contests');
+        const list = local ? JSON.parse(local) : [];
+        const updated = [clean, ...list.filter(c => c !== clean)].slice(0, 15);
+        localStorage.setItem('pulse_recent_contests', JSON.stringify(updated));
+      }
+    } catch (e) {}
   }
+
+  if (currentContest) {
+    recordContest(currentContest);
+  }
+
+  // Intercept form submissions on problem pages (/tasks/* or /submit)
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!form) return;
+    const action = form.getAttribute('action') || '';
+    if (action.includes('/submit')) {
+      const m = (action + window.location.pathname).match(/\/contests\/([^/?#]+)/);
+      if (m && m[1]) recordContest(m[1]);
+    }
+  }, true);
 
   // ── 2. Helpers ─────────────────────────────────────────────────────────
   function parseTimeStr(timeStr) {
@@ -34,21 +65,28 @@
   }
 
   function getLoggedInUser() {
-    // Header nav link
+    // 1. Header nav profile link
     const links = document.querySelectorAll('a[href^="/users/"]');
     for (const a of links) {
-      // Skip links inside main content (other users); target the navbar ones
       if (a.closest('#header, .header, nav, .navbar, .navbar-right, .dropdown')) {
         const m = (a.getAttribute('href') || '').match(/\/users\/([^/?#]+)/);
         if (m && m[1]) return m[1].trim();
       }
     }
-    // Embedded JS variable
+
+    // 2. Embedded JS variable userScreenName
     const scripts = document.querySelectorAll('script');
     for (const s of scripts) {
       const m = (s.textContent || '').match(/userScreenName\s*=\s*["']([^"']+)["']/);
-      if (m && m[1]) return m[1].trim();
+      if (m && m[1] && m[1].trim()) return m[1].trim();
     }
+
+    // 3. Fallback from localStorage
+    try {
+      const savedUser = localStorage.getItem('pulse_active_user');
+      if (savedUser) return savedUser.trim();
+    } catch (e) {}
+
     return '';
   }
 
@@ -89,9 +127,10 @@
     }
 
     let point = 0;
-    for (const c of cells) {
-      const v = parseFloat(c.textContent.trim());
-      if (!isNaN(v) && v >= 0 && v <= 3000) { point = v; break; }
+    const scoreCell = row.querySelector('.submission-score') || cells[4] || cells[3];
+    if (scoreCell) {
+      const v = parseFloat(scoreCell.textContent.trim());
+      if (!isNaN(v) && v >= 0 && v <= 3000) point = v;
     }
 
     return {
@@ -113,17 +152,26 @@
     if (saved.has(key)) return;
     saved.add(key);
 
-    // IndexedDB
+    console.log('[Pulse Tracker] Recorded submission:', sub.id, sub.problem_id, sub.result);
+
+    // 1. IndexedDB persistence
     if (typeof AtCoderDB !== 'undefined' && AtCoderDB.addOrUpdateSubmission) {
       await AtCoderDB.addOrUpdateSubmission(sub.user_id, sub);
     }
 
-    // chrome.storage.local signal (triggers storage.onChanged on ALL tabs including dashboard)
+    // 2. localStorage signal (instant synchronous cross-tab notification on atcoder.jp)
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('pulse_live_event', JSON.stringify({ sub, ts: Date.now() }));
+      }
+    } catch (e) {}
+
+    // 3. chrome.storage.local signal (triggers storage.onChanged on profile tab)
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set({ pulse_live_event: { sub, ts: Date.now() } });
     }
 
-    // runtime message → service worker → profile tab
+    // 4. Runtime message to background worker
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ action: 'SUBMISSION_RECORDED', submission: sub }, () => {
         if (chrome.runtime.lastError) {}
@@ -151,12 +199,14 @@
     const target = document.querySelector('table') || document.body;
     new MutationObserver(() => scan()).observe(target, { childList: true, subtree: true, characterData: true });
 
+    // Poll actively if any row is in judging state (WJ / Judging)
     if (judging) {
       let n = 0;
       const iv = setInterval(async () => {
         n++;
-        if (!(await scan()) || n > 50) clearInterval(iv);
-      }, 1000);
+        const stillJudging = await scan();
+        if (!stillJudging || n > 60) clearInterval(iv);
+      }, 800);
     }
   });
 
