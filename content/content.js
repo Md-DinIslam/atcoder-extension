@@ -113,9 +113,6 @@
       });
     });
 
-    // Also add a quick Pulse Pill directly in the user summary section for instant access
-    injectQuickPulseButton(showPulseView);
-
     // Auto-open if hash is #pulse or #analytics
     if (window.location.hash === '#pulse' || window.location.hash === '#analytics') {
       showPulseView();
@@ -129,30 +126,6 @@
         showNativeView();
       }
     });
-  }
-
-  function injectQuickPulseButton(onClickHandler) {
-    const heading = document.querySelector('.col-md-9 h3, .col-sm-12 h3');
-    if (!heading || document.querySelector('#ac-quick-pulse-btn')) return;
-
-    const quickBtn = document.createElement('button');
-    quickBtn.id = 'ac-quick-pulse-btn';
-    quickBtn.className = 'btn btn-default btn-xs';
-    quickBtn.style.marginLeft = '12px';
-    quickBtn.style.verticalAlign = 'middle';
-    quickBtn.style.borderColor = '#38bdf8';
-    quickBtn.innerHTML = `
-      <span class="glyphicon glyphicon-stats" style="color: #0284c7;"></span> 
-      <b>View Solve Analytics & Unsolved</b>
-    `;
-
-    quickBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      history.pushState(null, null, '#pulse');
-      onClickHandler();
-    });
-
-    heading.appendChild(quickBtn);
   }
 
   // Run when DOM is ready
