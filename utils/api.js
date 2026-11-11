@@ -416,14 +416,6 @@ const AtCoderAPI = {
     } catch (e) {}
     return results;
   }
-          contest_id: contestId,
-          user_id: userId,
-          result, language, point
-        });
-      }
-    } catch (e) {}
-    return results;
-  }
 };
 
 if (typeof module !== 'undefined' && module.exports) {
