@@ -20,21 +20,7 @@
     }
   },
   "background": {
-    "service_worker": "background/service_worker.js",
-    "scripts": [
-      "background/service_worker.js"
-    ]
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "atcoder-pulse@extension.local",
-      "strict_min_version": "140.0",
-      "data_collection_permissions": {
-        "required": [
-          "none"
-        ]
-      }
-    }
+    "service_worker": "background/service_worker.js"
   },
   "permissions": [
     "storage",

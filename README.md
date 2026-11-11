@@ -55,7 +55,7 @@ Mozilla provides a **100% free, instant automated self-distribution signing serv
    - Navigate to the [AMO Developer Hub - Submit an Add-on](https://addons.mozilla.org/developers/addon/submit/distribution).
    - Under Distribution Channel, select **"On your own"** (Self-distribution / unlisted).
 3. **Upload the ZIP**:
-   - Upload [`atcoder-pulse-extension.zip`](atcoder-pulse-extension.zip).
+   - Upload [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip) (specifically configured for Firefox & AMO validator).
 4. **Download Signed `.xpi` File**:
    - Within 1–2 minutes, Mozilla's automated scanner verifies and cryptographically signs your file, giving you a downloadable `.xpi` installer (e.g. `atcoder_pulse-1.0.0.xpi`).
 5. **Install Permanently**:
@@ -67,7 +67,7 @@ Mozilla provides a **100% free, instant automated self-distribution signing serv
 #### Option B: Quick Temporary Testing (All Firefox Versions)
 If you only need to quickly test or inspect the extension without signing:
 1. **Download & Locate File**:
-   - Download [`atcoder-pulse-extension.zip`](atcoder-pulse-extension.zip) from this repo.
+   - Download [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip) from this repo.
 2. **Open Firefox Debugging**:
    - In the Firefox address bar, paste and navigate to:
      ```
@@ -75,7 +75,7 @@ If you only need to quickly test or inspect the extension without signing:
      ```
 3. **Load the Add-on**:
    - Click the **Load Temporary Add-on...** button.
-   - Select either the `manifest.json` file inside your extracted folder or directly choose the `atcoder-pulse-extension.zip` file.
+   - Select either the `manifest.firefox.json` file (renamed to `manifest.json`) or directly choose the `atcoder-pulse-firefox.zip` file.
 4. **Pin to Toolbar**:
    - Click the Extensions (puzzle 🧩) icon on the top-right toolbar.
    - Click the gear icon (⚙️) next to **AtCoder Pulse** and select **Pin to Toolbar**.
@@ -89,7 +89,7 @@ If you are using Firefox Developer Edition, Nightly, or LibreWolf (which allow d
 2. Search for `xpinstall.signatures.required` and toggle it to `false`.
 3. Open `about:addons` (or press `Ctrl+Shift+A`).
 4. Click the gear icon (⚙️) at the top right and select **"Install Add-on From File..."**.
-5. Select [`atcoder-pulse-extension.zip`](atcoder-pulse-extension.zip). The extension will remain permanently installed across all browser restarts.
+5. Select [`atcoder-pulse-firefox.zip`](atcoder-pulse-firefox.zip). The extension will remain permanently installed across all browser restarts.
 
 ---
 
@@ -188,9 +188,11 @@ Access your essential practice metrics and top unsolved problems directly from y
 ## 📂 Project Structure
 
 ```
-├── manifest.json                  # Manifest V3 browser configuration
-├── package.py                     # Script to package atcoder-pulse-extension.zip
-├── atcoder-pulse-extension.zip    # Ready-to-use distribution archive
+├── manifest.json                  # Manifest V3 configuration for Chrome / Chromium
+├── manifest.firefox.json          # Manifest V3 configuration for Firefox & AMO
+├── package.py                     # Packaging script for Chrome & Firefox
+├── atcoder-pulse-extension.zip    # Distribution archive for Chrome / Brave / Edge
+├── atcoder-pulse-firefox.zip      # Distribution archive for Firefox & AMO Developer Hub
 ├── screenshots/                   # Feature screenshots for documentation
 │   ├── activity-heatmap.png
 │   ├── difficulty-distribution.png
