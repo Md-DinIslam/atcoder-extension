@@ -1,5 +1,5 @@
 /**
- * AtCoder API integration module (Kenkoooo endpoints)
+ * AtCoder API integration module (Kenkoooo endpoints & caching)
  * Handles incremental fetching, background bridging, and intelligent caching.
  */
 
@@ -131,115 +131,30 @@ const AtCoderAPI = {
   },
 
   /**
-   * Scrapes recent submissions DIRECTLY from atcoder.jp (no Kenkoooo delay).
-   * Works because content script runs on same origin (atcoder.jp).
-   * Returns array of submission objects compatible with Kenkoooo format.
-   */
-  async scrapeRecentSubmissions(userId, maxPages = 2) {
-    const cleanId = (userId || '').trim();
-    const results = [];
-
-    for (let page = 1; page <= maxPages; page++) {
-      const url = `https://atcoder.jp/users/${encodeURIComponent(cleanId)}/submissions?page=${page}`;
-      try {
-        const res = await fetch(url, { credentials: 'same-origin' });
-        if (!res.ok) break;
-        const html = await res.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        const rows = doc.querySelectorAll('table.table tbody tr');
-        if (!rows || rows.length === 0) break;
-
-        for (const row of rows) {
-          const cells = row.querySelectorAll('td');
-          if (cells.length < 8) continue;
-
-          // Time: "2024-11-10 15:30:00+0900" → epoch_second
-          const timeEl = cells[0].querySelector('time');
-          const timeStr = timeEl ? timeEl.textContent.trim() : '';
-          let epoch = 0;
-          if (timeStr) {
-            // Convert to ISO 8601: space→T, +0900→+09:00
-            const isoStr = timeStr.replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
-            const d = new Date(isoStr);
-            if (!isNaN(d.getTime())) epoch = Math.floor(d.getTime() / 1000);
-          }
-
-          // Contest ID
-          const contestLink = cells[1].querySelector('a');
-          const contestHref = contestLink ? (contestLink.getAttribute('href') || '') : '';
-          const contestId = contestHref.replace('/contests/', '').split('/')[0] || '';
-
-          // Problem ID from task link
-          const taskLink = cells[2].querySelector('a');
-          const taskHref = taskLink ? (taskLink.getAttribute('href') || '') : '';
-          const taskSplit = taskHref.split('/tasks/');
-          const problemId = taskSplit.length > 1 ? taskSplit[1] : '';
-
-          // Language (3rd cell, may have sub-link)
-          const language = cells[3].textContent.trim();
-
-          // Score/point
-          const point = parseInt(cells[4].textContent.trim()) || 0;
-
-          // Verdict (6th cell = index 6)
-          const verdictSpan = cells[6] ? (cells[6].querySelector('span') || cells[6]) : null;
-          const result = verdictSpan ? verdictSpan.textContent.trim().split(/\s+/)[0] : '';
-
-          // Submission ID from last cell detail link
-          const detailLink = row.querySelector('a[href*="/submissions/"]');
-          const subHref = detailLink ? (detailLink.getAttribute('href') || '') : '';
-          const idMatch = subHref.match(/\/submissions\/(\d+)/);
-          const subId = idMatch ? parseInt(idMatch[1]) : 0;
-
-          if (!subId || !problemId || !epoch) continue;
-
-          results.push({
-            id: subId,
-            epoch_second: epoch,
-            problem_id: problemId,
-            contest_id: contestId,
-            result,
-            language,
-            point
-          });
-        }
-
-        // If fewer than 20 rows, this was the last page
-        if (rows.length < 20) break;
-
-      } catch (err) {
-        console.warn(`AtCoder scrape page ${page} error:`, err);
-        break;
-      }
-    }
-
-    return results;
-  },
-
-  /**
-   * Incrementally fetches all submissions for a user (Kenkoooo bulk load)
+   * Incrementally fetches submissions for a user from Kenkoooo API.
+   * If cached submissions exist, only fetches recent submissions (fast!).
+   * If forceRefresh is true, re-checks the last 7 days to guarantee any recent update is caught.
    */
   async getUserSubmissions(userId, onProgress = null, forceRefresh = false) {
     if (!userId) return { submissions: [], newlyFetched: 0 };
     const cleanId = userId.trim().toLowerCase();
 
-    if (forceRefresh) {
-      await AtCoderDB.clearUser(cleanId);
-    }
-
     const cachedData = await AtCoderDB.getUserData(cleanId);
-    let allSubmissions = cachedData ? [...cachedData.submissions] : [];
-    let fromSecond = 0;
-
+    const allSubmissions = cachedData && Array.isArray(cachedData.submissions) ? [...cachedData.submissions] : [];
     const subMap = new Map();
     for (const sub of allSubmissions) {
       subMap.set(sub.id, sub);
     }
 
+    let fromSecond = 0;
     if (cachedData && cachedData.lastFetchedEpoch > 0) {
-      fromSecond = Math.max(0, cachedData.lastFetchedEpoch - 1);
+      if (forceRefresh) {
+        // Re-check past 7 days to guarantee any recent submission or status change is caught
+        fromSecond = Math.max(0, cachedData.lastFetchedEpoch - (7 * 86400));
+      } else {
+        // Normal incremental check: last 2 hours
+        fromSecond = Math.max(0, cachedData.lastFetchedEpoch - 7200);
+      }
     }
 
     let newlyFetchedCount = 0;
@@ -265,8 +180,13 @@ const AtCoderAPI = {
       }
 
       for (const item of batch) {
-        if (!subMap.has(item.id)) {
+        const existing = subMap.get(item.id);
+        if (!existing) {
           subMap.set(item.id, item);
+          newlyFetchedCount++;
+        } else if (existing.result !== item.result) {
+          // Status updated (e.g. WJ -> AC)
+          subMap.set(item.id, { ...existing, ...item });
           newlyFetchedCount++;
         }
       }
@@ -288,7 +208,7 @@ const AtCoderAPI = {
           }
         }
         fromSecond = (maxEpoch === fromSecond) ? fromSecond + 1 : maxEpoch;
-        await new Promise(r => setTimeout(r, 120));
+        await new Promise(r => setTimeout(r, 100));
       }
     }
 

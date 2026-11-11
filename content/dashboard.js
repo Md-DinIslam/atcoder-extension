@@ -364,13 +364,22 @@ class AtCoderDashboard {
     if (solvedDiff) solvedDiff.addEventListener('change', () => this.renderSolvedList());
     if (solvedTask) solvedTask.addEventListener('change', () => this.renderSolvedList());
     if (solvedSort) solvedSort.addEventListener('change', () => this.renderSolvedList());
+
+    // Listen for live submission updates captured while solving problems
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+      chrome.runtime.onMessage.addListener((msg) => {
+        if (msg && msg.action === 'NEW_SUBMISSION_RECORDED') {
+          this._renderFromCache();
+        }
+      });
+    }
   }
 
   async loadInitialData() {
     this.renderShell();
     // Step 1: Instant render from IndexedDB cache (zero network)
     await this._renderFromCache();
-    // Step 2: Background incremental sync (scrape AtCoder directly)
+    // Step 2: Background incremental sync
     this.refreshData(false);
   }
 
@@ -411,63 +420,29 @@ class AtCoderDashboard {
     if (syncIcon) syncIcon.classList.add('ac-spin');
     if (syncLabel) syncLabel.textContent = 'Syncing...';
     if (progressBar) progressBar.style.display = 'block';
-    if (progressFill) progressFill.style.width = '10%';
+    if (progressFill) progressFill.style.width = '20%';
 
     try {
-      // Always use 24h-TTL cached meta — no network unless stale
+      // 1. Always use 24h-TTL cached meta — fast and reliable
       const [models, problems] = await Promise.all([
         AtCoderAPI.getProblemModels(false),
         AtCoderAPI.getProblems(false)
       ]);
 
-      const cachedData = await AtCoderDB.getUserData(this.userId);
-      const hasCache = cachedData && cachedData.submissions && cachedData.submissions.length > 0;
+      if (progressFill) progressFill.style.width = '50%';
 
-      let mergedList = [];
-      let newlyFetched = 0;
-
-      if (!hasCache) {
-        // ── First-time setup: bulk load from Kenkoooo ──
-        if (progressText) progressText.textContent = 'First-time setup: loading all submissions from Kenkoooo...';
-        if (progressFill) progressFill.style.width = '20%';
-
-        const subResult = await AtCoderAPI.getUserSubmissions(this.userId, (prog) => {
-          if (progressText) progressText.textContent = `Loading ${prog.fetchedCount} submissions...`;
-          if (progressFill) progressFill.style.width = '60%';
-        }, false);
-
-        mergedList = subResult.submissions;
-        newlyFetched = subResult.newlyFetched;
-
-      } else {
-        // ── Incremental sync: scrape AtCoder DIRECTLY (instant, no Kenkoooo delay) ──
-        const pages = forceFetch ? 3 : 1;
-        if (progressText) progressText.textContent = `Checking AtCoder for new submissions...`;
-        if (progressFill) progressFill.style.width = '40%';
-
-        const scraped = await AtCoderAPI.scrapeRecentSubmissions(this.userId, pages);
-
-        const subMap = new Map();
-        for (const sub of cachedData.submissions) subMap.set(sub.id, sub);
-        for (const sub of scraped) {
-          if (!subMap.has(sub.id)) {
-            subMap.set(sub.id, sub);
-            newlyFetched++;
-          }
+      // 2. Fetch incremental submissions from Kenkoooo
+      const subResult = await AtCoderAPI.getUserSubmissions(this.userId, (prog) => {
+        if (progressText && progressFill) {
+          progressText.textContent = `Syncing submissions (${prog.fetchedCount} loaded)...`;
+          progressFill.style.width = '75%';
         }
+      }, forceFetch);
 
-        mergedList = Array.from(subMap.values());
-        mergedList.sort((a, b) => a.epoch_second - b.epoch_second);
+      if (progressFill) progressFill.style.width = '95%';
 
-        // Persist merged data
-        const highestEpoch = mergedList.length > 0 ? mergedList[mergedList.length - 1].epoch_second : 0;
-        AtCoderDB.saveUserData(this.userId, mergedList, highestEpoch).catch(() => {});
-      }
-
-      if (progressFill) progressFill.style.width = '90%';
-
-      // Analyze & render
-      this.data = AtCoderAnalyzer.analyze(mergedList, models, problems);
+      // 3. Analyze & render UI
+      this.data = AtCoderAnalyzer.analyze(subResult.submissions, models, problems);
       this.problemsMap = problems;
       this.renderMetrics();
       this.renderCharts();
@@ -477,12 +452,12 @@ class AtCoderDashboard {
 
       if (progressFill) progressFill.style.width = '100%';
 
-      // Status message
+      // 4. Status message
       const syncText = this.container.querySelector('#ac-last-sync-text');
       if (syncText) {
         const t = new Date().toLocaleTimeString();
-        syncText.textContent = newlyFetched > 0
-          ? `✅ +${newlyFetched} new — ${t}`
+        syncText.textContent = subResult.newlyFetched > 0
+          ? `✅ +${subResult.newlyFetched} new — ${t}`
           : `Up to date — ${t}`;
       }
 

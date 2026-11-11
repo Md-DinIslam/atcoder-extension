@@ -33,5 +33,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Keep channel open for async response
   }
 
+  if (request.action === 'SUBMISSION_RECORDED') {
+    // Notify any open AtCoder profile tabs to immediately refresh data from IndexedDB
+    try {
+      chrome.tabs.query({ url: '*://atcoder.jp/users/*' }, (tabs) => {
+        if (tabs && tabs.length > 0) {
+          for (const tab of tabs) {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'NEW_SUBMISSION_RECORDED',
+              submission: request.submission
+            }, () => {
+              if (chrome.runtime.lastError) {
+                // Ignore if tab not ready
+              }
+            });
+          }
+        }
+      });
+    } catch (e) {}
+    sendResponse({ success: true });
+    return false;
+  }
+
   return false;
 });

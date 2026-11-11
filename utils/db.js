@@ -139,6 +139,28 @@ const AtCoderDB = {
     } catch (err) {
       return false;
     }
+  },
+
+  async addOrUpdateSubmission(userId, newSub) {
+    if (!userId || !newSub || !newSub.id) return false;
+    try {
+      const cleanId = (userId || '').trim().toLowerCase();
+      const cached = await this.getUserData(cleanId);
+      const subs = cached && Array.isArray(cached.submissions) ? [...cached.submissions] : [];
+      const subMap = new Map();
+      for (const s of subs) {
+        subMap.set(s.id, s);
+      }
+      subMap.set(newSub.id, { ...(subMap.get(newSub.id) || {}), ...newSub });
+      const merged = Array.from(subMap.values());
+      merged.sort((a, b) => a.epoch_second - b.epoch_second);
+      const highestEpoch = merged.length > 0 ? merged[merged.length - 1].epoch_second : (newSub.epoch_second || 0);
+      await this.saveUserData(cleanId, merged, highestEpoch);
+      return true;
+    } catch (err) {
+      console.warn('addOrUpdateSubmission error:', err);
+      return false;
+    }
   }
 };
 
