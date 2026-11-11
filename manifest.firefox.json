@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AtCoder Pulse - Analytics & Unsolved Tracker",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Deep profile analytics, interactive difficulty breakdown charts, and Codeforces-style unsolved problem tracker for AtCoder.",
   "icons": {
     "16": "icons/icon16.png",
@@ -26,7 +26,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "atcoder-pulse-dinislam@addons.mozilla.org",
+      "id": "{7c641d54-2add-4b12-89fc-047e23216857}",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
         "required": [
