@@ -34,18 +34,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'SUBMISSION_RECORDED') {
-    // Notify any open AtCoder profile tabs to immediately refresh data from IndexedDB
+    // Broadcast to all open AtCoder tabs to immediately refresh data
     try {
-      chrome.tabs.query({ url: '*://atcoder.jp/users/*' }, (tabs) => {
+      chrome.tabs.query({}, (tabs) => {
         if (tabs && tabs.length > 0) {
           for (const tab of tabs) {
             chrome.tabs.sendMessage(tab.id, {
               action: 'NEW_SUBMISSION_RECORDED',
               submission: request.submission
             }, () => {
-              if (chrome.runtime.lastError) {
-                // Ignore if tab not ready
-              }
+              if (chrome.runtime.lastError) {}
             });
           }
         }

@@ -64,7 +64,7 @@
     },
     {
       "matches": [
-        "https://atcoder.jp/contests/*/submissions*"
+        "https://atcoder.jp/contests/*"
       ],
       "js": [
         "utils/db.js",

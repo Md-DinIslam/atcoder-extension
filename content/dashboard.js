@@ -425,6 +425,14 @@ class AtCoderDashboard {
         }
       });
     }
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName === 'local' && changes.pulse_latest_submission) {
+          this._renderFromCache();
+        }
+      });
+    }
   }
 
   async loadInitialData() {
