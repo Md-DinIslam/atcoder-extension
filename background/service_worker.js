@@ -33,6 +33,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Keep channel open for async response
   }
 
+  if (request.action === 'FETCH_ATCODER_SUBMISSIONS') {
+    const { userId, contestIds } = request;
+    if (!contestIds || contestIds.length === 0) {
+      sendResponse({ submissions: [] });
+      return false;
+    }
+
+    (async () => {
+      const allSubs = [];
+      for (const contestId of contestIds.slice(0, 6)) {
+        try {
+          // Try /submissions/me first (requires login session)
+          let url = `https://atcoder.jp/contests/${encodeURIComponent(contestId)}/submissions/me`;
+          let resp = await fetch(url, { credentials: 'include' });
+
+          // If /submissions/me redirects to login or gives 302, try public URL
+          if (!resp.ok || resp.redirected) {
+            url = `https://atcoder.jp/contests/${encodeURIComponent(contestId)}/submissions?f.User=${encodeURIComponent(userId)}`;
+            resp = await fetch(url, { credentials: 'include' });
+            if (!resp.ok) continue;
+          }
+
+          const html = await resp.text();
+          // Skip login pages
+          if (html.includes('Sign In - AtCoder') || html.includes('/login?continue')) continue;
+
+          // Return raw HTML - content script will parse with DOMParser
+          allSubs.push({ contestId, html });
+        } catch (e) {
+          console.warn(`[Pulse BG] Failed to fetch contest ${contestId}:`, e);
+        }
+      }
+      sendResponse({ rawPages: allSubs });
+    })();
+    return true; // Keep channel open for async
+  }
+
   if (request.action === 'SUBMISSION_RECORDED') {
     // Broadcast to all open AtCoder tabs to immediately refresh data
     try {

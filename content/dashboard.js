@@ -428,7 +428,7 @@ class AtCoderDashboard {
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName === 'local' && changes.pulse_latest_submission) {
+        if (areaName === 'local' && changes.pulse_live_event) {
           this._renderFromCache();
         }
       });

@@ -1,290 +1,162 @@
 /**
  * AtCoder Pulse - Silent Real-Time Submission Tracker
- * Runs on all atcoder.jp contest pages to capture submissions the exact second they are judged.
- * Completely silent: zero visual DOM modifications.
+ * Runs on all atcoder.jp/contests/* pages.
+ * Two jobs:
+ *   1. Record which contests the user visits (so the dashboard knows where to look).
+ *   2. Parse any visible submission rows and save judged results instantly.
  */
 
 (function () {
   'use strict';
 
+  // ── 1. Track visited contest ──────────────────────────────────────────
+  const contestMatch = window.location.pathname.match(/\/contests\/([^/?#]+)/);
+  const currentContest = contestMatch ? contestMatch[1] : '';
+
+  if (currentContest && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get({ pulse_recent_contests: [] }, (data) => {
+      const list = Array.isArray(data.pulse_recent_contests) ? data.pulse_recent_contests : [];
+      // Move current contest to the front, keep max 6
+      const updated = [currentContest, ...list.filter(c => c !== currentContest)].slice(0, 6);
+      chrome.storage.local.set({ pulse_recent_contests: updated });
+    });
+  }
+
+  // ── 2. Helpers ─────────────────────────────────────────────────────────
   function parseTimeStr(timeStr) {
     if (!timeStr) return Math.floor(Date.now() / 1000);
     try {
-      const isoStr = timeStr.trim().replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
-      const d = new Date(isoStr);
-      if (!isNaN(d.getTime())) {
-        return Math.floor(d.getTime() / 1000);
-      }
+      const iso = timeStr.trim().replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) return Math.floor(d.getTime() / 1000);
     } catch (e) {}
     return Math.floor(Date.now() / 1000);
   }
 
   function getLoggedInUser() {
-    // 1. Check header navbar link
-    const userEl = document.querySelector('#header a[href^="/users/"], a.username, .navbar a[href^="/users/"]');
-    if (userEl) {
-      const href = userEl.getAttribute('href') || '';
-      const match = href.match(/\/users\/([^/?#]+)/);
-      if (match && match[1]) {
-        return match[1].trim();
+    // Header nav link
+    const links = document.querySelectorAll('a[href^="/users/"]');
+    for (const a of links) {
+      // Skip links inside main content (other users); target the navbar ones
+      if (a.closest('#header, .header, nav, .navbar, .navbar-right, .dropdown')) {
+        const m = (a.getAttribute('href') || '').match(/\/users\/([^/?#]+)/);
+        if (m && m[1]) return m[1].trim();
       }
     }
-
-    // 2. Check embedded script tags
+    // Embedded JS variable
     const scripts = document.querySelectorAll('script');
     for (const s of scripts) {
-      const text = s.textContent || '';
-      const match = text.match(/userScreenName\s*=\s*["']([^"']+)["']/);
-      if (match && match[1]) {
-        return match[1].trim();
-      }
+      const m = (s.textContent || '').match(/userScreenName\s*=\s*["']([^"']+)["']/);
+      if (m && m[1]) return m[1].trim();
     }
-
-    // 3. Fallback to window.userScreenName if available
-    if (typeof window !== 'undefined' && window.userScreenName) {
-      return String(window.userScreenName).trim();
-    }
-
     return '';
   }
 
-  function parseSubmissionRow(row, defaultUserId) {
+  function parseRow(row, defaultUser) {
     const cells = row.querySelectorAll('td');
     if (cells.length < 5) return null;
 
-    // 1. Detail link -> Submission ID & Contest ID
     const detailLink = row.querySelector('a[href*="/submissions/"]');
     if (!detailLink) return null;
     const href = detailLink.getAttribute('href') || '';
     const idMatch = href.match(/\/submissions\/(\d+)/);
     if (!idMatch) return null;
-    const subId = parseInt(idMatch[1], 10);
 
-    const contestMatch = href.match(/\/contests\/([^/?#]+)/);
-    const contestId = contestMatch ? contestMatch[1] : '';
-
-    // 2. Task link -> Problem ID
+    const cMatch = href.match(/\/contests\/([^/?#]+)/);
     const taskLink = row.querySelector('a[href*="/tasks/"]');
-    const taskHref = taskLink ? taskLink.getAttribute('href') || '' : '';
-    const taskMatch = taskHref.match(/\/tasks\/([^/?#]+)/);
-    const problemId = taskMatch ? taskMatch[1] : '';
+    const taskMatch = taskLink ? (taskLink.getAttribute('href') || '').match(/\/tasks\/([^/?#]+)/) : null;
 
-    // 3. User ID: check row for /users/ link, otherwise use defaultUserId
     let userId = '';
     const userLink = row.querySelector('a[href*="/users/"]');
     if (userLink) {
-      const userHref = userLink.getAttribute('href') || '';
-      const userMatch = userHref.match(/\/users\/([^/?#]+)/);
-      if (userMatch && userMatch[1]) userId = userMatch[1].trim();
-    }
-    if (!userId) {
-      userId = defaultUserId;
-    }
-
-    // 4. Epoch Second
-    const timeEl = row.querySelector('time');
-    const epochSecond = parseTimeStr(timeEl ? timeEl.textContent : '');
-
-    // 5. Verdict
-    const statusSpan = row.querySelector('.label') || row.querySelector('span[class*="label"]');
-    const resultRaw = statusSpan ? statusSpan.textContent.trim() : '';
-    const isJudging = /WJ|Judging|WR|\d+\/\d+/i.test(resultRaw);
-    let result = resultRaw.split(/\s+/)[0].toUpperCase();
-    if (isJudging) {
-      result = 'WJ';
-    } else if (!result) {
-      result = 'OTHER';
-    }
-
-    // 6. Language
-    let language = 'Other';
-    for (const c of cells) {
-      const t = c.textContent.trim();
-      if (/C\+\+|Python|PyPy|Java|Rust|Go|C#|Ruby|Kotlin|Haskell|JavaScript|TypeScript/i.test(t)) {
-        language = t;
-        break;
-      }
-    }
-
-    // 7. Score
-    let point = 0;
-    for (const c of cells) {
-      const val = parseFloat(c.textContent.trim());
-      if (!isNaN(val) && val >= 0 && val <= 3000) {
-        point = val;
-        break;
-      }
-    }
-
-    return {
-      id: subId,
-      epoch_second: epochSecond,
-      problem_id: problemId,
-      contest_id: contestId,
-      user_id: userId,
-      result: result,
-      language: language,
-      point: point,
-      isJudging: isJudging
-    };
-  }
-
-  function parseSingleSubmissionDetails(defaultUserId) {
-    const path = window.location.pathname;
-    const match = path.match(/\/contests\/([^/?#]+)\/submissions\/(\d+)/);
-    if (!match) return null;
-
-    const contestId = match[1];
-    const subId = parseInt(match[2], 10);
-
-    const taskLink = document.querySelector('a[href*="/tasks/"]');
-    const problemId = taskLink ? (taskLink.getAttribute('href').match(/\/tasks\/([^/?#]+)/) || [])[1] : '';
-
-    let userId = '';
-    const userLink = document.querySelector('a[href*="/users/"]');
-    if (userLink) {
-      const uMatch = userLink.getAttribute('href').match(/\/users\/([^/?#]+)/);
+      const uMatch = (userLink.getAttribute('href') || '').match(/\/users\/([^/?#]+)/);
       if (uMatch) userId = uMatch[1].trim();
     }
-    if (!userId) userId = defaultUserId;
 
-    const timeEl = document.querySelector('time');
-    const epochSecond = parseTimeStr(timeEl ? timeEl.textContent : '');
-
-    const statusSpan = document.querySelector('.label, span[class*="label"]');
-    const resultRaw = statusSpan ? statusSpan.textContent.trim() : '';
-    const isJudging = /WJ|Judging|WR|\d+\/\d+/i.test(resultRaw);
-    let result = resultRaw.split(/\s+/)[0].toUpperCase();
+    const statusSpan = row.querySelector('.label') || row.querySelector('span[class*="label"]');
+    const raw = statusSpan ? statusSpan.textContent.trim() : '';
+    const isJudging = /WJ|Judging|WR|\d+\/\d+/i.test(raw);
+    let result = raw.split(/\s+/)[0].toUpperCase();
     if (isJudging) result = 'WJ';
     else if (!result) result = 'OTHER';
 
     let language = 'Other';
-    const ths = document.querySelectorAll('th');
-    for (const th of ths) {
-      if (th.textContent.includes('Language')) {
-        const td = th.nextElementSibling;
-        if (td) language = td.textContent.trim();
+    for (const c of cells) {
+      if (/C\+\+|Python|PyPy|Java|Rust|Go|C#|Ruby|Kotlin|Haskell/i.test(c.textContent)) {
+        language = c.textContent.trim();
+        break;
       }
     }
 
+    let point = 0;
+    for (const c of cells) {
+      const v = parseFloat(c.textContent.trim());
+      if (!isNaN(v) && v >= 0 && v <= 3000) { point = v; break; }
+    }
+
     return {
-      id: subId,
-      epoch_second: epochSecond,
-      problem_id: problemId,
-      contest_id: contestId,
-      user_id: userId,
-      result: result,
-      language: language,
-      point: 0,
-      isJudging: isJudging
+      id: parseInt(idMatch[1], 10),
+      epoch_second: parseTimeStr(row.querySelector('time') ? row.querySelector('time').textContent : ''),
+      problem_id: taskMatch ? taskMatch[1] : '',
+      contest_id: cMatch ? cMatch[1] : currentContest,
+      user_id: userId || defaultUser,
+      result, language, point, isJudging
     };
   }
 
-  const recordedSubmissions = new Set();
+  // ── 3. Save + broadcast ────────────────────────────────────────────────
+  const saved = new Set();
 
   async function saveAndNotify(sub) {
     if (!sub || !sub.user_id || !sub.problem_id || sub.isJudging) return;
-
     const key = `${sub.id}_${sub.result}`;
-    if (recordedSubmissions.has(key)) return;
-    recordedSubmissions.add(key);
+    if (saved.has(key)) return;
+    saved.add(key);
 
-    console.log('[AtCoder Pulse] Instant Submission Judged:', sub.id, sub.problem_id, sub.result);
-
-    // 1. Direct Save to IndexedDB
+    // IndexedDB
     if (typeof AtCoderDB !== 'undefined' && AtCoderDB.addOrUpdateSubmission) {
       await AtCoderDB.addOrUpdateSubmission(sub.user_id, sub);
     }
 
-    // 2. Broadcast via chrome.storage.local (Triggers storage.onChanged across all tabs)
+    // chrome.storage.local signal (triggers storage.onChanged on ALL tabs including dashboard)
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({
-        pulse_latest_submission: {
-          sub: sub,
-          timestamp: Date.now()
-        }
-      });
+      chrome.storage.local.set({ pulse_live_event: { sub, ts: Date.now() } });
     }
 
-    // 3. Broadcast via runtime message
+    // runtime message → service worker → profile tab
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-      chrome.runtime.sendMessage({
-        action: 'SUBMISSION_RECORDED',
-        submission: sub
-      }, () => {
+      chrome.runtime.sendMessage({ action: 'SUBMISSION_RECORDED', submission: sub }, () => {
         if (chrome.runtime.lastError) {}
       });
     }
   }
 
-  async function processPage() {
-    const loggedInUser = getLoggedInUser();
-    let hasJudging = false;
+  // ── 4. Scan page ───────────────────────────────────────────────────────
+  async function scan() {
+    const user = getLoggedInUser();
+    let judging = false;
 
-    // Check if on single submission page
-    if (window.location.pathname.includes('/submissions/') && !window.location.pathname.endsWith('/me') && !window.location.pathname.endsWith('/submissions')) {
-      const singleSub = parseSingleSubmissionDetails(loggedInUser);
-      if (singleSub) {
-        if (singleSub.isJudging) {
-          hasJudging = true;
-        } else {
-          await saveAndNotify(singleSub);
-        }
-      }
-    }
-
-    // Check table rows (works on /submissions, /submissions/me, and any submission list)
-    const rows = document.querySelectorAll('table.table tbody tr, table tbody tr');
+    const rows = document.querySelectorAll('table tbody tr');
     for (const row of rows) {
-      const sub = parseSubmissionRow(row, loggedInUser);
+      const sub = parseRow(row, user);
       if (!sub || !sub.problem_id) continue;
-
-      if (sub.isJudging) {
-        hasJudging = true;
-        continue;
-      }
-
+      if (sub.isJudging) { judging = true; continue; }
       await saveAndNotify(sub);
     }
-
-    return hasJudging;
+    return judging;
   }
 
-  // Listen for task page form submission so we track the active contest in sessionStorage
-  if (window.location.pathname.includes('/tasks/')) {
-    const form = document.querySelector('form[action*="/submit"]');
-    if (form) {
-      form.addEventListener('submit', () => {
-        const contestMatch = window.location.pathname.match(/\/contests\/([^/?#]+)/);
-        if (contestMatch) {
-          try {
-            sessionStorage.setItem('pulse_last_contest', contestMatch[1]);
-          } catch (e) {}
-        }
-      });
-    }
-  }
+  // ── 5. Boot ────────────────────────────────────────────────────────────
+  scan().then((judging) => {
+    const target = document.querySelector('table') || document.body;
+    new MutationObserver(() => scan()).observe(target, { childList: true, subtree: true, characterData: true });
 
-  // Initial scan and observer setup
-  processPage().then((hasJudging) => {
-    const targetEl = document.querySelector('table.table') || document.querySelector('table') || document.body;
-    if (targetEl) {
-      const observer = new MutationObserver(() => {
-        processPage();
-      });
-      observer.observe(targetEl, { childList: true, subtree: true, characterData: true });
-
-      // Fast polling fallback for up to 60 seconds if judging is in progress
-      if (hasJudging) {
-        let attempts = 0;
-        const interval = setInterval(async () => {
-          attempts++;
-          const stillJudging = await processPage();
-          if (!stillJudging || attempts > 40) {
-            clearInterval(interval);
-          }
-        }, 1200);
-      }
+    if (judging) {
+      let n = 0;
+      const iv = setInterval(async () => {
+        n++;
+        if (!(await scan()) || n > 50) clearInterval(iv);
+      }, 1000);
     }
   });
 
