@@ -446,36 +446,34 @@ const AtCoderAnalyzer = {
           ...u,
           reason: 'Unfinished Practice (Re-attempt)'
         });
-        if (recommendations.length >= 3) break;
+        if (recommendations.length >= 15) break;
       }
     }
 
-    // 2. Add high-value rated problems from recent ABCs
-    if (recommendations.length < 5) {
-      for (const [pid, pMeta] of Object.entries(problemsMap)) {
-        if (solvedSet.has(pid)) continue;
-        if (recommendations.some(r => r.id === pid)) continue;
+    // 2. Add high-value rated problems from recent ABCs & ARCs
+    for (const [pid, pMeta] of Object.entries(problemsMap)) {
+      if (solvedSet.has(pid)) continue;
+      if (recommendations.some(r => r.id === pid)) continue;
 
-        const model = problemModels[pid];
-        if (!model || model.difficulty === null || model.difficulty === undefined) continue;
+      const model = problemModels[pid];
+      if (!model || model.difficulty === null || model.difficulty === undefined) continue;
 
-        const d = Math.round(model.difficulty);
-        if (d >= targetMin && d <= targetMax) {
-          const contestId = pMeta.contest_id || '';
-          if (contestId.startsWith('abc') || contestId.startsWith('arc')) {
-            recommendations.push({
-              id: pid,
-              contestId,
-              title: pMeta.title || pid,
-              difficulty: d,
-              tier: AtCoderColors.getTier(d),
-              contestType: this.categorizeContest(contestId),
-              taskIndex: this.normalizeTaskIndex(pMeta.problem_index, pid),
-              reason: `Target Rating Match (${d})`,
-              url: `https://atcoder.jp/contests/${contestId}/tasks/${pid}`
-            });
-            if (recommendations.length >= 5) break;
-          }
+      const d = Math.round(model.difficulty);
+      if (d >= targetMin && d <= targetMax) {
+        const contestId = pMeta.contest_id || '';
+        if (contestId.startsWith('abc') || contestId.startsWith('arc')) {
+          recommendations.push({
+            id: pid,
+            contestId,
+            title: pMeta.title || pid,
+            difficulty: d,
+            tier: AtCoderColors.getTier(d),
+            contestType: this.categorizeContest(contestId),
+            taskIndex: this.normalizeTaskIndex(pMeta.problem_index, pid),
+            reason: `Target Rating Match (${d})`,
+            url: `https://atcoder.jp/contests/${contestId}/tasks/${pid}`
+          });
+          if (recommendations.length >= 60) break;
         }
       }
     }

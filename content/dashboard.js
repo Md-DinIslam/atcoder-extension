@@ -14,6 +14,10 @@ class AtCoderDashboard {
     this.filterTask = 'all';
     this.searchTerm = '';
     this.sortBy = 'attempts'; // 'attempts' | 'diff-desc' | 'diff-asc' | 'recent' | 'task-asc' | 'task-desc'
+    this.pageSize = 30;
+    this.unsolvedPage = 1;
+    this.recommendationsPage = 1;
+    this.solvedPage = 1;
   }
 
   renderShell() {
@@ -176,6 +180,7 @@ class AtCoderDashboard {
             </div>
 
             <div id="ac-unsolved-list" class="ac-problem-grid"></div>
+            <div id="ac-unsolved-pagination"></div>
           </div>
 
           <!-- 3. Recommendations Tab -->
@@ -185,6 +190,7 @@ class AtCoderDashboard {
               <p class="text-muted">Targeted problems chosen near your current practice difficulty level:</p>
             </div>
             <div id="ac-recommendations-list" class="ac-problem-grid"></div>
+            <div id="ac-recommendations-pagination"></div>
           </div>
 
           <!-- 4. Solved List Tab -->
@@ -254,6 +260,7 @@ class AtCoderDashboard {
               </div>
             </div>
             <div id="ac-solved-list" class="ac-problem-grid"></div>
+            <div id="ac-solved-pagination"></div>
           </div>
         </div>
       </div>
@@ -279,6 +286,7 @@ class AtCoderDashboard {
         // Always re-render active tab content
         if (tabId === 'unsolved') {
           // Reset filters to show all unsolved problems by default
+          this.unsolvedPage = 1;
           this.filterDifficulty = 'all';
           this.filterContest = 'all';
           this.filterTask = 'all';
@@ -293,8 +301,10 @@ class AtCoderDashboard {
           if (searchInput) searchInput.value = '';
           this.renderUnsolvedList();
         } else if (tabId === 'solved') {
+          this.solvedPage = 1;
           this.renderSolvedList();
         } else if (tabId === 'recommendations') {
+          this.recommendationsPage = 1;
           this.renderRecommendations();
         } else if (tabId === 'charts') {
           this.scrollHeatmapToRight();
@@ -325,12 +335,14 @@ class AtCoderDashboard {
     // Filters for unsolved
     const unsolvedSearch = this.container.querySelector('#ac-unsolved-search');
     unsolvedSearch.addEventListener('input', (e) => {
+      this.unsolvedPage = 1;
       this.searchTerm = e.target.value.toLowerCase().trim();
       this.renderUnsolvedList();
     });
 
     const diffSelect = this.container.querySelector('#ac-filter-diff');
     diffSelect.addEventListener('change', (e) => {
+      this.unsolvedPage = 1;
       this.filterDifficulty = e.target.value;
       this.renderUnsolvedList();
     });
@@ -338,6 +350,7 @@ class AtCoderDashboard {
     const taskSelect = this.container.querySelector('#ac-filter-task');
     if (taskSelect) {
       taskSelect.addEventListener('change', (e) => {
+        this.unsolvedPage = 1;
         this.filterTask = e.target.value;
         this.renderUnsolvedList();
       });
@@ -345,12 +358,14 @@ class AtCoderDashboard {
 
     const contestSelect = this.container.querySelector('#ac-filter-contest');
     contestSelect.addEventListener('change', (e) => {
+      this.unsolvedPage = 1;
       this.filterContest = e.target.value;
       this.renderUnsolvedList();
     });
 
     const sortSelect = this.container.querySelector('#ac-sort-by');
     sortSelect.addEventListener('change', (e) => {
+      this.unsolvedPage = 1;
       this.sortBy = e.target.value;
       this.renderUnsolvedList();
     });
@@ -360,10 +375,22 @@ class AtCoderDashboard {
     const solvedDiff = this.container.querySelector('#ac-solved-filter-diff');
     const solvedTask = this.container.querySelector('#ac-solved-filter-task');
     const solvedSort = this.container.querySelector('#ac-solved-sort-by');
-    if (solvedSearch) solvedSearch.addEventListener('input', () => this.renderSolvedList());
-    if (solvedDiff) solvedDiff.addEventListener('change', () => this.renderSolvedList());
-    if (solvedTask) solvedTask.addEventListener('change', () => this.renderSolvedList());
-    if (solvedSort) solvedSort.addEventListener('change', () => this.renderSolvedList());
+    if (solvedSearch) solvedSearch.addEventListener('input', () => {
+      this.solvedPage = 1;
+      this.renderSolvedList();
+    });
+    if (solvedDiff) solvedDiff.addEventListener('change', () => {
+      this.solvedPage = 1;
+      this.renderSolvedList();
+    });
+    if (solvedTask) solvedTask.addEventListener('change', () => {
+      this.solvedPage = 1;
+      this.renderSolvedList();
+    });
+    if (solvedSort) solvedSort.addEventListener('change', () => {
+      this.solvedPage = 1;
+      this.renderSolvedList();
+    });
 
     // Listen for live submission updates captured while solving problems
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
@@ -521,6 +548,7 @@ class AtCoderDashboard {
         bucketCounts,
         this.data.uniqueSolvedCount,
         (bucket) => {
+          this.solvedPage = 1;
           const solvedTabBtn = this.container.querySelector('[data-tab="solved"]');
           const solvedDiffSelect = this.container.querySelector('#ac-solved-filter-diff');
           const bucketKey = bucket ? (bucket.key || bucket) : 'all';
@@ -538,6 +566,7 @@ class AtCoderDashboard {
       const taskContainer = this.container.querySelector('#ac-task-chart-container');
       if (taskContainer && this.data.taskIndices) {
         AtCoderCharts.renderTaskIndexChart(taskContainer, this.data.taskIndices, (taskKey) => {
+          this.solvedPage = 1;
           const solvedTabBtn = this.container.querySelector('[data-tab="solved"]');
           const solvedTaskSelect = this.container.querySelector('#ac-solved-filter-task');
           if (solvedTaskSelect) solvedTaskSelect.value = taskKey;
@@ -646,6 +675,8 @@ class AtCoderDashboard {
     }
 
     if (list.length === 0) {
+      const paginationContainer = this.container.querySelector('#ac-unsolved-pagination');
+      if (paginationContainer) paginationContainer.innerHTML = '';
       const isFiltered = (this.filterDifficulty && this.filterDifficulty !== 'all') || (this.filterTask && this.filterTask !== 'all') || (this.filterContest && this.filterContest !== 'all') || this.searchTerm;
       container.innerHTML = `
         <div class="ac-empty-state">
@@ -659,6 +690,7 @@ class AtCoderDashboard {
       const resetBtn = container.querySelector('#ac-reset-filters-btn');
       if (resetBtn) {
         resetBtn.addEventListener('click', () => {
+          this.unsolvedPage = 1;
           this.filterDifficulty = 'all';
           this.filterContest = 'all';
           this.filterTask = 'all';
@@ -677,20 +709,44 @@ class AtCoderDashboard {
       return;
     }
 
-    container.innerHTML = list.map(p => this.generateProblemCard(p, true)).join('');
+    const totalItems = list.length;
+    const totalPages = Math.ceil(totalItems / this.pageSize) || 1;
+    if (this.unsolvedPage > totalPages) this.unsolvedPage = 1;
+
+    const startIdx = (this.unsolvedPage - 1) * this.pageSize;
+    const pagedList = list.slice(startIdx, startIdx + this.pageSize);
+
+    container.innerHTML = pagedList.map(p => this.generateProblemCard(p, true)).join('');
+
+    const paginationContainer = this.container.querySelector('#ac-unsolved-pagination');
+    this.renderPagination(paginationContainer, totalItems, this.unsolvedPage, this.pageSize, (newPage) => {
+      this.unsolvedPage = newPage;
+      this.renderUnsolvedList();
+      const toolbar = this.container.querySelector('#ac-tab-unsolved .ac-filter-toolbar') || container;
+      toolbar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
   }
 
   renderRecommendations() {
     if (!this.data) return;
     const container = this.container.querySelector('#ac-recommendations-list');
+    const paginationContainer = this.container.querySelector('#ac-recommendations-pagination');
     const recs = this.data.recommendations || [];
 
     if (recs.length === 0) {
       container.innerHTML = `<div class="ac-empty-state">No recommendations at this time.</div>`;
+      if (paginationContainer) paginationContainer.innerHTML = '';
       return;
     }
 
-    container.innerHTML = recs.map(p => {
+    const totalItems = recs.length;
+    const totalPages = Math.ceil(totalItems / this.pageSize) || 1;
+    if (this.recommendationsPage > totalPages) this.recommendationsPage = 1;
+
+    const startIdx = (this.recommendationsPage - 1) * this.pageSize;
+    const pagedList = recs.slice(startIdx, startIdx + this.pageSize);
+
+    container.innerHTML = pagedList.map(p => {
       const cardHtml = this.generateProblemCard(p, false);
       return `
         <div class="ac-rec-card-wrap">
@@ -699,6 +755,13 @@ class AtCoderDashboard {
         </div>
       `;
     }).join('');
+
+    this.renderPagination(paginationContainer, totalItems, this.recommendationsPage, this.pageSize, (newPage) => {
+      this.recommendationsPage = newPage;
+      this.renderRecommendations();
+      const header = this.container.querySelector('#ac-tab-recommendations .ac-recommend-header') || container;
+      header.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
   }
 
   renderSolvedList() {
@@ -769,15 +832,106 @@ class AtCoderDashboard {
       list.sort((a, b) => (a.difficulty !== null && a.difficulty !== undefined ? a.difficulty : 9999) - (b.difficulty !== null && b.difficulty !== undefined ? b.difficulty : 9999));
     }
 
-    // Limit to 150 for fast DOM rendering
-    const displayList = list.slice(0, 150);
+    const paginationContainer = this.container.querySelector('#ac-solved-pagination');
 
-    if (displayList.length === 0) {
+    if (list.length === 0) {
       container.innerHTML = `<div class="ac-empty-state">No solved problems match your filters.</div>`;
+      if (paginationContainer) paginationContainer.innerHTML = '';
       return;
     }
 
-    container.innerHTML = displayList.map(p => this.generateSolvedCard(p)).join('');
+    const totalItems = list.length;
+    const totalPages = Math.ceil(totalItems / this.pageSize) || 1;
+    if (this.solvedPage > totalPages) this.solvedPage = 1;
+
+    const startIdx = (this.solvedPage - 1) * this.pageSize;
+    const pagedList = list.slice(startIdx, startIdx + this.pageSize);
+
+    container.innerHTML = pagedList.map(p => this.generateSolvedCard(p)).join('');
+
+    this.renderPagination(paginationContainer, totalItems, this.solvedPage, this.pageSize, (newPage) => {
+      this.solvedPage = newPage;
+      this.renderSolvedList();
+      const toolbar = this.container.querySelector('#ac-tab-solved .ac-filter-toolbar') || container;
+      toolbar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
+  renderPagination(paginationContainer, totalItems, currentPage, pageSize, onPageChange) {
+    if (!paginationContainer) return;
+    if (totalItems <= 0) {
+      paginationContainer.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+    if (totalPages <= 1) {
+      paginationContainer.innerHTML = `
+        <div class="ac-pagination-wrap">
+          <div class="ac-pagination-info">Showing all ${totalItems} problems</div>
+        </div>
+      `;
+      return;
+    }
+
+    const startIdx = (currentPage - 1) * pageSize + 1;
+    const endIdx = Math.min(currentPage * pageSize, totalItems);
+
+    let buttonsHtml = '';
+    // Previous button
+    buttonsHtml += `<button class="ac-page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>« Prev</button>`;
+
+    // Page numbers with ellipsis
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (currentPage <= 3) {
+      endPage = Math.min(totalPages, maxVisible);
+    } else if (currentPage >= totalPages - 2) {
+      startPage = Math.max(1, totalPages - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+      buttonsHtml += `<button class="ac-page-btn" data-page="1">1</button>`;
+      if (startPage > 2) {
+        buttonsHtml += `<span class="ac-page-dots">...</span>`;
+      }
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+      buttonsHtml += `<button class="ac-page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttonsHtml += `<span class="ac-page-dots">...</span>`;
+      }
+      buttonsHtml += `<button class="ac-page-btn" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    // Next button
+    buttonsHtml += `<button class="ac-page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Next »</button>`;
+
+    paginationContainer.innerHTML = `
+      <div class="ac-pagination-wrap">
+        <div class="ac-pagination-info">Showing ${startIdx}–${endIdx} of ${totalItems} problems (Page ${currentPage} of ${totalPages})</div>
+        <div class="ac-pagination-controls">
+          ${buttonsHtml}
+        </div>
+      </div>
+    `;
+
+    // Click handler for buttons
+    const btns = paginationContainer.querySelectorAll('.ac-page-btn:not(:disabled):not(.active)');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = parseInt(btn.getAttribute('data-page'), 10);
+        if (!isNaN(p) && p >= 1 && p <= totalPages && p !== currentPage) {
+          onPageChange(p);
+        }
+      });
+    });
   }
 
   formatRelativeTime(epochSecond) {

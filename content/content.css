@@ -881,3 +881,87 @@
   color: #94a3b8;
 }
 
+/* ================= Problem List Pagination ================= */
+.ac-pagination-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 12px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.ac-pulse-theme-dark .ac-pagination-wrap {
+  background: #1e293b;
+  border-color: #334155;
+}
+.ac-pagination-info {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+.ac-pulse-theme-dark .ac-pagination-info {
+  color: #94a3b8;
+}
+.ac-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ac-page-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 32px;
+  text-align: center;
+  user-select: none;
+}
+.ac-pulse-theme-dark .ac-page-btn {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+.ac-page-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0284c7;
+}
+.ac-pulse-theme-dark .ac-page-btn:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #475569;
+  color: #38bdf8;
+}
+.ac-page-btn.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  pointer-events: none;
+}
+.ac-pulse-theme-dark .ac-page-btn.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+.ac-page-btn:disabled,
+.ac-page-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.ac-page-dots {
+  color: #94a3b8;
+  padding: 0 4px;
+  font-size: 12px;
+  user-select: none;
+}
+
+
